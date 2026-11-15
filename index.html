@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <style>
 [hidden]{display:none!important}
+.gbtn,#gHost,#gHost2{display:none!important}  /* Google 로그인: 지금은 숨김 (다시 쓰려면 이 줄 삭제) */
 :root{
   --paper:#F6F2E9; --paper2:#EDE6D6; --card:#fff; --ink:#1D1B24; --ink2:#5B5866; --ink3:#8E8A97;
   --line:#E6DFCF; --indigo:#2C4A8F; --indigo2:#1F3669; --indigo-soft:#E8EDF8;
@@ -123,17 +124,22 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 /* 말하기 */
 .avatar{width:56px;height:56px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--dan),#E49A58);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-weight:900;font-size:24px;overflow:hidden;border:3px solid #fff;box-shadow:0 4px 14px rgba(200,69,59,.28)}
-.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar img{width:100%;height:100%;object-fit:cover;object-position:center top}
 .avatar.lg{width:96px;height:96px;font-size:40px}
 .avatar.xl{width:120px;height:120px;font-size:50px;border-width:4px}
-.stage{position:relative;border-radius:24px;overflow:hidden;min-height:440px;background:linear-gradient(160deg,var(--indigo2),var(--indigo) 62%,color-mix(in srgb,var(--indigo) 55%,#fff));background-size:cover;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:48px 16px 22px;color:#fff;box-shadow:var(--shadow)}
-.stage::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.10),rgba(0,0,0,.32));pointer-events:none}
+.stage{position:relative;border-radius:24px;overflow:hidden;min-height:430px;background:linear-gradient(160deg,var(--indigo2),var(--indigo) 62%,color-mix(in srgb,var(--indigo) 55%,#fff));background-size:cover;background-position:center;display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,44%);align-items:end;gap:6px;padding:46px 12px 0;color:#fff;box-shadow:var(--shadow)}
+.stage::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.06),rgba(0,0,0,.28));pointer-events:none}
 .stage>*{position:relative}
-.st-prog{position:absolute;top:12px;left:14px;background:rgba(0,0,0,.45);padding:3px 11px;border-radius:99px;font-size:12.5px;font-weight:700}
-.st-name{font-family:var(--serif);font-weight:900;font-size:19px;text-shadow:0 1px 6px rgba(0,0,0,.55);margin-top:4px}
-.st-title{font-size:13px;font-weight:700;background:rgba(0,0,0,.45);padding:2px 12px;border-radius:99px}
-.st-bubble{position:relative;margin-top:14px;max-width:460px;width:100%;background:#fff;color:var(--ink);border-radius:20px;padding:16px 18px;text-align:center;font-size:17px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.28);animation:fade .3s ease both}
-.st-bubble::before{content:"";position:absolute;top:-9px;left:50%;margin-left:-10px;border:10px solid transparent;border-top:0;border-bottom-color:#fff}
+.st-prog{position:absolute;top:12px;left:14px;background:rgba(0,0,0,.45);padding:3px 11px;border-radius:99px;font-size:12.5px;font-weight:700;z-index:2}
+.st-left{align-self:center;padding-bottom:30px}
+.st-right{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0}
+.st-fig{display:block;width:100%;max-height:340px;object-fit:contain;object-position:bottom;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.st-fig.noimg{width:120px;height:120px;border-radius:50%;margin-bottom:8px}
+.st-plate{width:calc(100% + 12px);margin:0 -6px;text-align:center;padding:8px 4px 14px}
+.st-name{font-family:var(--serif);font-weight:900;font-size:17px;text-shadow:0 1px 6px rgba(0,0,0,.6);line-height:1.25}
+.st-title{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;background:rgba(0,0,0,.45);padding:2px 10px;border-radius:99px}
+.st-bubble{position:relative;width:100%;background:#fff;color:var(--ink);border-radius:20px;padding:14px 16px;text-align:left;font-size:16.5px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.28);animation:fade .3s ease both}
+.st-bubble::after{content:"";position:absolute;top:50%;right:-9px;margin-top:-10px;border:10px solid transparent;border-right:0;border-left-color:#fff}
 .st-bubble .ttsbtn{margin-top:10px}
 .myline{margin-top:14px}
 .myline .ml-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -694,14 +700,16 @@ function avatarHtml(t, big) {
 }
 function stageHtml() {
   return `<div class="stage" id="stage"><span class="st-prog" id="stProg"></span>
-    <div id="stAv"></div><div class="st-name" id="stName"></div><div class="st-title" id="stTitle"></div>
-    <div class="st-bubble" id="stBub"><div id="stLine"></div><button class="ttsbtn" id="stListen" data-act="npcPlay">🔊 듣기</button></div></div>`;
+    <div class="st-left"><div class="st-bubble" id="stBub"><div id="stLine"></div><button class="ttsbtn" id="stListen" data-act="npcPlay">🔊 듣기</button></div></div>
+    <div class="st-right"><div id="stAv" style="width:100%"></div><div class="st-plate"><div class="st-name" id="stName"></div><div class="st-title" id="stTitle"></div></div></div></div>`;
 }
 function paintStage() {
   const sp = G.sp, sc = G.unit.script, n = sc.length, el = $('#stage'); if (!sp || !el) return;
   const bg = G.unit.bg_url; el.style.backgroundImage = bg ? `url("${bg.replace(/"/g, '%22')}"), linear-gradient(160deg,var(--indigo2),var(--indigo))` : '';
   const t = sc[Math.min(sp.idx, n - 1)];
-  $('#stAv').innerHTML = `<div style="display:grid;place-items:center">${avatarHtml(t).replace('class="avatar ', 'class="avatar xl ')}</div>`;
+  const av = $('#stAv'), fig = imgUrl(t.character_img_url);
+  if (fig) { av.innerHTML = ''; const im = new Image(); im.className = 'st-fig'; im.alt = t.character_name || ''; im.onerror = () => { av.innerHTML = `<div style="display:grid;place-items:center">${avatarHtml(t, true)}</div>`; }; im.src = fig; av.appendChild(im); }
+  else av.innerHTML = `<div style="display:grid;place-items:center;margin-bottom:8px">${avatarHtml(t, true).replace('class="avatar ', 'class="avatar xl ')}</div>`;
   $('#stName').textContent = t.character_name || '대화 상대';
   const ti = $('#stTitle'); ti.textContent = t.character_title || ''; ti.hidden = !t.character_title;
   $('#stProg').textContent = sp.phase === 'intro' ? `총 ${n}번의 대화` : (sp.done ? '완료' : `대화 ${sp.idx + 1} / ${n}`);
@@ -714,11 +722,11 @@ function paintStage() {
 function panelSpeaking() {
   const u = G.unit, el = $('#panel'), sc = u.script || [];
   if (!sc.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 말하기 대본이 아직 없어요.', '말')}</div>`; return; }
-  G.sp = { phase: 'intro', idx: 0, segs: [], done: false, busy: false, blob: null, showMy: true };
+  G.sp = { phase: 'intro', idx: 0, segs: [], done: false, busy: false, blob: null, showMy: false };
   el.innerHTML = `<div class="fade">
     ${G.user ? '' : '<p class="chip" style="margin:0 2px 10px">게스트 모드 · 결과는 저장되지 않아요</p>'}
     ${stageHtml()}
-    <div class="card myline" id="myBox" hidden><div class="ml-head"><b>🗨️ 내가 말할 대사</b><button class="btn btn-ghost btn-sm" id="myTog" data-act="toggleMy">숨기기</button></div><div class="ml-text" id="myText"></div></div>
+    <div class="card myline" id="myBox" hidden><div class="ml-head"><b>🗨️ 내가 말할 대사</b><button class="btn btn-ghost btn-sm" id="myTog" data-act="toggleMy">보기</button></div><div class="ml-text" id="myText"></div></div>
     ${micNotice()}
     <div class="dock">
       <div class="dock-st" id="dockSt"></div>
@@ -753,7 +761,7 @@ function startSpeaking() {
   showTurn(0);
 }
 function showTurn(i) {
-  const sp = G.sp; sp.idx = i; sp.blob = null;
+  const sp = G.sp; sp.idx = i; sp.blob = null; sp.showMy = false;   // 새 대사마다 '내가 말할 대사'는 숨김으로 시작
   const p = $('#prev'); if (p) { p.pause(); p.removeAttribute('src'); }
   paintStage(); setDock('idle'); playNpc();
 }
@@ -1030,8 +1038,6 @@ function openAuth(mode = 'login') {
       <div class="err" id="aErr" role="alert"></div>
       <button class="btn btn-primary btn-block" type="submit">${reg ? '가입하고 시작' : '로그인'}</button>
     </form>
-    <div class="or" style="margin:14px 0">또는</div>
-    <button class="gbtn" style="width:100%" data-act="google">Google로 계속하기</button><div id="gHost2" style="margin-top:8px"></div>
     <button class="btn btn-ghost btn-block" style="margin-top:10px" data-act="closeModal">닫기</button>`);
   $('#authForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -1429,9 +1435,9 @@ async function adChars() {
 }
 function adDrawChars() {
   const at = (i, f) => `data-ad="chr" data-i="${i}" data-f="${f}"`;
-  $('#adBody').innerHTML = `<p class="small muted" style="margin:0 2px 10px">말하기 대화에서 고를 등장인물(아바타)을 미리 등록해 두세요. 이미지는 정사각형으로 자동 정리돼요.</p>
+  $('#adBody').innerHTML = `<p class="small muted" style="margin:0 2px 10px">말하기 대화에서 고를 등장인물(아바타)을 미리 등록해 두세요. <b>배경 없는 PNG(상반신)</b>를 올리면 말하기 화면의 배경 앞에 자연스럽게 서 있는 모습으로 나와요. 투명 배경이 유지되고 세로 900px 이내로 줄여 저장돼요(비율 유지).</p>
     ${(A.chars || []).map((x, i) => `<div class="card adcard"><div class="chrow">
-      <div style="flex:none;text-align:center">${avatarHtml({ character_name: x.name, character_img_url: adImg(x.img_url) }, true)}
+      <div style="flex:none;text-align:center"><div style="width:110px;height:130px;border-radius:14px;background:repeating-conic-gradient(#e9e4d6 0 25%,#fff 0 50%) 0 0/16px 16px;display:grid;place-items:end center;overflow:hidden">${adImg(x.img_url) ? `<img src="${esc(adImg(x.img_url))}" alt="" style="max-width:100%;max-height:100%;object-fit:contain">` : `<span class="serif" style="font-size:40px;font-weight:900;color:var(--ink3);align-self:center">${esc((x.name || '인').charAt(0))}</span>`}</div>
         <label class="btn btn-ghost btn-sm" style="margin-top:8px">🖼️ 이미지<input type="file" hidden accept="image/*" data-ad="file" data-kind="avatar" data-i="${i}"></label></div>
       <div class="grow" style="min-width:200px"><div class="g2"><div class="fld"><label>이름</label><input class="txt" ${at(i, 'name')} value="${esc(x.name)}" maxlength="40" placeholder="예: 민지"></div>
         <div class="fld"><label>직책·소개</label><input class="txt" ${at(i, 'title')} value="${esc(x.title)}" maxlength="40" placeholder="예: 같은 반 친구"></div></div>
@@ -1509,7 +1515,7 @@ async function adUploadFile(input) {
   setLoading(true, '파일을 올리는 중… (큰 파일은 1분 정도 걸려요)');
   try {
     let blob = f, mime = f.type || '';
-    if (kind === 'avatar') { const r = await adResize(f, 400, true, false); blob = r.blob; mime = r.mime; }
+    if (kind === 'avatar') { let r = await adResize(f, 900, false, true); if (r.blob.size > 2.6 * 1024 * 1024) r = await adResize(f, 600, false, true); blob = r.blob; mime = r.mime; }
     else if (kind === 'logo') { const r = await adResize(f, 256, true, true); blob = r.blob; mime = r.mime; }
     else if (kind === 'bg') { const r = await adResize(f, 1280, false, false); blob = r.blob; mime = r.mime; }
     const b64 = await blobToB64(blob);
