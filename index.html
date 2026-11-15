@@ -97,7 +97,7 @@ main{padding:22px 0 90px;min-height:calc(100vh - 60px)}
 /* 단원 화면 / 탭 */
 .uhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .crumb{font-size:13px;color:var(--ink3);font-weight:600}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:5px;background:var(--paper2);border-radius:16px;margin-bottom:18px}
+.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:4px;padding:5px;background:var(--paper2);border-radius:16px;margin-bottom:18px}
 .seg button{padding:11px 6px;border-radius:12px;font-weight:700;font-size:15px;color:var(--ink2);transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
 .seg button.on{background:#fff;color:var(--indigo);box-shadow:0 2px 10px rgba(29,27,36,.1)}
 
@@ -125,6 +125,21 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .avatar{width:56px;height:56px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--dan),#E49A58);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-weight:900;font-size:24px;overflow:hidden;border:3px solid #fff;box-shadow:0 4px 14px rgba(200,69,59,.28)}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .avatar.lg{width:96px;height:96px;font-size:40px}
+.avatar.xl{width:120px;height:120px;font-size:50px;border-width:4px}
+.stage{position:relative;border-radius:24px;overflow:hidden;min-height:440px;background:linear-gradient(160deg,var(--indigo2),var(--indigo) 62%,color-mix(in srgb,var(--indigo) 55%,#fff));background-size:cover;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:48px 16px 22px;color:#fff;box-shadow:var(--shadow)}
+.stage::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.10),rgba(0,0,0,.32));pointer-events:none}
+.stage>*{position:relative}
+.st-prog{position:absolute;top:12px;left:14px;background:rgba(0,0,0,.45);padding:3px 11px;border-radius:99px;font-size:12.5px;font-weight:700}
+.st-name{font-family:var(--serif);font-weight:900;font-size:19px;text-shadow:0 1px 6px rgba(0,0,0,.55);margin-top:4px}
+.st-title{font-size:13px;font-weight:700;background:rgba(0,0,0,.45);padding:2px 12px;border-radius:99px}
+.st-bubble{position:relative;margin-top:14px;max-width:460px;width:100%;background:#fff;color:var(--ink);border-radius:20px;padding:16px 18px;text-align:center;font-size:17px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.28);animation:fade .3s ease both}
+.st-bubble::before{content:"";position:absolute;top:-9px;left:50%;margin-left:-10px;border:10px solid transparent;border-top:0;border-bottom-color:#fff}
+.st-bubble .ttsbtn{margin-top:10px}
+.myline{margin-top:14px}
+.myline .ml-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.myline .ml-text{margin-top:8px;padding:12px 14px;border-radius:14px;background:var(--indigo-soft);color:var(--indigo2);font-weight:600;font-size:17px;line-height:1.55}
+.vid{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:#000}
+.vid iframe,.vid video{position:absolute;inset:0;width:100%;height:100%;border:0}
 .sp-head{display:flex;align-items:center;gap:14px;padding:14px 16px}
 .sp-head .grow{flex:1;min-width:0}
 .sp-head b{font-family:var(--serif);font-size:17px}
@@ -150,7 +165,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .dock-st{text-align:center;font-size:14px;font-weight:600;color:var(--ink2);margin-bottom:10px;min-height:22px}
 .dock-st.rec{color:var(--dan)}
 .dock audio{width:100%;height:38px;margin-bottom:10px}
-.dock-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:560px;margin:0 auto}
+.dock-btns{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:8px;max-width:560px;margin:0 auto}
 .dbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:16px;font-weight:700;font-size:12.5px;background:#fff;border:1.5px solid var(--line);min-height:62px;justify-content:center}
 .dbtn span{font-size:22px;line-height:1.1}
 .dbtn[disabled]{opacity:.38;pointer-events:none}
@@ -381,13 +396,13 @@ const emptyBox = (t, g = '말') => `<div class="empty"><b>${g}</b>${esc(t)}</div
 /* ───────── 상태 ───────── */
 const G = { token: null, user: null, units: [], unit: null, course: 'listening', entered: false, cs: 0, uc: {}, googleClientId: '', sp: null, as: null, au: null, chartUnit: 'ALL', settings: BOOT.settings || {} };
 
-const spBusy = () => !!(G.sp && G.sp.phase === 'chat' && (G.sp.blob || G.sp.dock === 'rec'));
+const spBusy = () => !!(G.sp && G.sp.phase === 'play' && (G.sp.blob || G.sp.dock === 'rec' || G.sp.segs.length));
 function cleanup() {
   if (G.au) { try { G.au.el.pause(); } catch (e) {} G.au = null; }
   try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {}
   const sp = G.sp;
   if (sp) {
-    clearInterval(sp.timer); clearInterval(sp.stepTimer);
+    clearInterval(sp.timer); clearInterval(sp.stepTimer); try { sp.npc && sp.npc.pause(); } catch (e) {}
     try { sp.rec && sp.rec.state !== 'inactive' && (sp.rec.onstop = null, sp.rec.stop()); } catch (e) {}
     try { sp.stream && sp.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
     if (sp.url) URL.revokeObjectURL(sp.url);
@@ -555,10 +570,11 @@ async function viewUnits(refresh = true) {
 }
 
 /* ───────── 단원 화면 ───────── */
+const defCourse = u => (u && u.intro_url) ? 'intro' : 'listening';
 async function openUnit(id, course) {
   cleanup(); G.entered = true;
   if (G.uc[id]) {   // 캐시된 단원은 바로 열고, 뒤에서 최신 내용으로 갱신
-    G.unit = G.uc[id]; viewUnit(course || 'listening');
+    G.unit = G.uc[id]; viewUnit(course || defCourse(G.unit));
     api('api_getUnit', id).then(u => { G.uc[id] = u; if (G.unit && G.unit.unit_id === u.unit_id && !(G.sp && (G.sp.blob || G.sp.dock === 'rec'))) G.unit = u; }).catch(() => {});
     return;
   }
@@ -566,7 +582,7 @@ async function openUnit(id, course) {
   try { G.unit = await api('api_getUnit', id); }
   catch (e) { setLoading(false); toast(e.message); return viewUnits(); }
   setLoading(false); G.uc[id] = G.unit;
-  viewUnit(course || 'listening');
+  viewUnit(course || defCourse(G.unit));
 }
 function viewUnit(course) {
   cleanup(); G.course = course; G.cs = Date.now(); renderTopbar();
@@ -575,16 +591,34 @@ function viewUnit(course) {
     <div class="uhead"><div><div class="crumb">UNIT ${esc(u.unit_id)}</div><h2 class="sec-title">${esc(u.unit_title)}</h2></div>
     <button class="btn btn-ghost btn-sm" data-act="units">← 단원 목록</button></div>
     <div class="seg" role="tablist">
-      ${[['listening', '🎧', '듣기'], ['speaking', '🗣️', '말하기'], ['assessment', '📝', '자기평가']].map(t => `<button role="tab" class="${course === t[0] ? 'on' : ''}" data-act="tab" data-tab="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}
+      ${[['intro', '🎬', '도입'], ['listening', '🎧', '듣기'], ['speaking', '🗣️', '말하기'], ['assessment', '📝', '자기평가']].map(t => `<button role="tab" class="${course === t[0] ? 'on' : ''}" data-act="tab" data-tab="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}
     </div>
     <div id="panel"></div></section>`;
-  ({ listening: panelListening, speaking: panelSpeaking, assessment: panelAssessment })[course]();
+  ({ intro: panelIntro, listening: panelListening, speaking: panelSpeaking, assessment: panelAssessment })[course || 'listening']();
 }
 async function switchTab(c) {
   if (c === G.course) return;
   if (spBusy() && !(await askConfirm('녹음한 내용이 사라져요. 이동할까요?', '이동'))) return;
   viewUnit(c);
 }
+/* ───────── 코스 0: 도입 (영상) ───────── */
+function embedHtml(url) {
+  url = String(url || '').trim(); if (!url) return '';
+  let m;
+  if ((m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/))) return `<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?rel=0" title="도입 영상" allow="accelerometer; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+  if ((m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/))) return `<div class="vid"><iframe src="https://player.vimeo.com/video/${m[1]}" title="도입 영상" allow="fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
+  if ((m = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || url.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([\w-]+)/))) return `<div class="vid"><iframe src="https://drive.google.com/file/d/${m[1]}/preview" title="도입 영상" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
+  if (/^https:\/\//i.test(url) && /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)) return `<div class="vid"><video controls playsinline preload="metadata" src="${esc(url)}"></video></div>`;
+  if (/^https:\/\//i.test(url)) return `<a class="btn btn-primary" href="${esc(url)}" target="_blank" rel="noopener">▶ 영상 열기 ↗</a>`;
+  return '';
+}
+function panelIntro() {
+  const u = G.unit, el = $('#panel'), v = embedHtml(u.intro_url);
+  if (!v) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 도입 영상이 아직 등록되지 않았어요.', '도')}<div style="text-align:center"><button class="btn btn-primary" data-act="tab" data-tab="listening">듣기로 바로 가기 →</button></div></div>`; return; }
+  el.innerHTML = `<div class="card fade">${v}${u.intro_text ? `<p style="margin-top:14px;white-space:pre-line">${esc(u.intro_text)}</p>` : ''}
+    <div style="margin-top:14px;text-align:right"><button class="btn btn-primary btn-sm" data-act="tab" data-tab="listening">다음: 듣기 →</button></div></div>`;
+}
+
 /* ───────── 코스 1: 듣기 ───────── */
 function panelListening() {
   const u = G.unit, el = $('#panel');
@@ -652,44 +686,92 @@ async function markListening(auto) {
 }
 
 /* ───────── 코스 2: 말하기 ───────── */
-const MAX_REC = 240;
+const MAX_REC = 240, MAX_TURN = 60, GAP_SEC = 2;
 const whoHtml = t => esc(t.character_name || '대화 상대') + (t.character_title ? ` <span class="chip">${esc(t.character_title)}</span>` : '');
 function avatarHtml(t, big) {
   const ch = esc((t.character_name || '말').charAt(0));
   return `<div class="avatar ${big ? 'lg' : ''}">${t.character_img_url ? `<img src="${esc(t.character_img_url)}" alt="${esc(t.character_name)}" data-ch="${ch}" onerror="this.replaceWith(this.dataset.ch)">` : ch}</div>`;
 }
-function scriptHtml(sc) {
-  return sc.map((t, i) => `<div class="sc-turn">
-    <div class="msg npc">${avatarHtml(t)}<div class="bubble"><div class="who">${esc(t.character_name || '상대')}${t.character_title ? ' · ' + esc(t.character_title) : ''}</div>${esc(t.npc_line)}<br><button class="ttsbtn" data-act="tts" data-text="${esc(t.npc_line)}">🔊 듣기</button></div></div>
-    <div class="msg me"><div class="bubble"><div class="who">${i + 1}. 내가 말할 대사</div>${esc(t.my_line)}</div></div></div>`).join('');
+function stageHtml() {
+  return `<div class="stage" id="stage"><span class="st-prog" id="stProg"></span>
+    <div id="stAv"></div><div class="st-name" id="stName"></div><div class="st-title" id="stTitle"></div>
+    <div class="st-bubble" id="stBub"><div id="stLine"></div><button class="ttsbtn" id="stListen" data-act="npcPlay">🔊 듣기</button></div></div>`;
+}
+function paintStage() {
+  const sp = G.sp, sc = G.unit.script, n = sc.length, el = $('#stage'); if (!sp || !el) return;
+  const bg = G.unit.bg_url; el.style.backgroundImage = bg ? `url("${bg.replace(/"/g, '%22')}"), linear-gradient(160deg,var(--indigo2),var(--indigo))` : '';
+  const t = sc[Math.min(sp.idx, n - 1)];
+  $('#stAv').innerHTML = `<div style="display:grid;place-items:center">${avatarHtml(t).replace('class="avatar ', 'class="avatar xl ')}</div>`;
+  $('#stName').textContent = t.character_name || '대화 상대';
+  const ti = $('#stTitle'); ti.textContent = t.character_title || ''; ti.hidden = !t.character_title;
+  $('#stProg').textContent = sp.phase === 'intro' ? `총 ${n}번의 대화` : (sp.done ? '완료' : `대화 ${sp.idx + 1} / ${n}`);
+  $('#stLine').textContent = sp.phase === 'intro' ? '준비가 되면 아래 [시작] 버튼을 눌러 주세요.' : (sp.done ? '모든 대화를 마쳤어요! 수고했어요 👏' : t.npc_line);
+  $('#stListen').hidden = sp.phase === 'intro' || sp.done;
+  const my = $('#myBox'); my.hidden = sp.phase === 'intro' || sp.done;
+  $('#myText').textContent = t.my_line; $('#myText').hidden = !sp.showMy;
+  $('#myTog').textContent = sp.showMy ? '숨기기' : '보기';
 }
 function panelSpeaking() {
   const u = G.unit, el = $('#panel'), sc = u.script || [];
   if (!sc.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 말하기 대본이 아직 없어요.', '말')}</div>`; return; }
-  G.sp = { phase: 'chat', busy: false, blob: null };
-  const first = sc[0];
+  G.sp = { phase: 'intro', idx: 0, segs: [], done: false, busy: false, blob: null, showMy: true };
   el.innerHTML = `<div class="fade">
-    <div class="card sp-head"><div style="flex:none">${avatarHtml(first, true)}</div><div class="grow"><b>${whoHtml(first)}</b>
-      <div class="small muted">모두 ${sc.length}번의 대화 · 대본을 이어서 한 번에 녹음해요</div></div></div>
-    ${G.user ? '' : '<p class="chip" style="margin:12px 2px 0">게스트 모드 · 결과는 저장되지 않아요</p>'}
-    <ol class="steps" style="margin:14px 2px">
-      <li><div><b>아래 대본을 처음부터 끝까지 읽어요</b><br><span class="muted small">상대 대사는 읽지 않아도 돼요. 파란 말풍선 <b>내가 말할 대사</b>만 순서대로 말해요.</span></div></li>
-      <li><div><b>🎤 녹음 → ⏹ 멈춤</b><br><span class="muted small">최대 ${fmt(MAX_REC)}까지 녹음할 수 있고, 다시 녹음할 수 있어요.</span></div></li>
-      <li><div><b>✅ 제출하면 AI가 전체를 한 번에 평가해요</b></div></li></ol>
+    ${G.user ? '' : '<p class="chip" style="margin:0 2px 10px">게스트 모드 · 결과는 저장되지 않아요</p>'}
+    ${stageHtml()}
+    <div class="card myline" id="myBox" hidden><div class="ml-head"><b>🗨️ 내가 말할 대사</b><button class="btn btn-ghost btn-sm" id="myTog" data-act="toggleMy">숨기기</button></div><div class="ml-text" id="myText"></div></div>
     ${micNotice()}
-    <div class="chat" id="chat">${scriptHtml(sc)}</div>
     <div class="dock">
       <div class="dock-st" id="dockSt"></div>
       <audio id="prev" controls hidden></audio>
       <input type="file" id="recFile" accept="audio/*" ${/Android/i.test(navigator.userAgent) ? 'capture' : ''} hidden>
-      <div class="dock-btns">
+      <div class="dock-btns" id="dockBtns">
+        <button class="dbtn ok" id="bStart" data-act="startSp"><span>▶</span>시작</button>
         <button class="dbtn rec" id="bRec" data-act="rec"><span>🎤</span>녹음</button>
         <button class="dbtn" id="bStop" data-act="stop"><span>⏹</span>멈춤</button>
         <button class="dbtn" id="bRe" data-act="rerec"><span>🔁</span>재녹음</button>
+        <button class="dbtn ok" id="bSave" data-act="saveSeg"><span>💾</span>저장</button>
+        <button class="dbtn" id="bAgain" data-act="againSp"><span>↺</span>처음부터</button>
         <button class="dbtn ok" id="bSub" data-act="submit"><span>✅</span>제출</button>
       </div>
       <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" data-act="micTest">🎙️ 마이크 점검</button><button class="btn btn-ghost btn-sm" data-act="fileRec">🎧 녹음 앱·파일로 대신하기</button></div></div></div>`;
-  $('#recFile').addEventListener('change', onRecFile); setDock('idle');
+  $('#recFile').addEventListener('change', onRecFile);
+  paintStage(); setDock('start');
+}
+function playNpc() {
+  const sp = G.sp; if (!sp || sp.done) return;
+  const t = G.unit.script[sp.idx];
+  try { sp.npc && sp.npc.pause(); speechSynthesis.cancel(); } catch (e) {}
+  if (t.npc_audio_url) {
+    const a = new Audio(t.npc_audio_url); sp.npc = a;
+    a.onerror = () => { if (G.sp === sp) speak(t.npc_line); };
+    a.play().catch(() => { if (G.sp === sp) speak(t.npc_line); });
+  } else speak(t.npc_line);
+}
+function startSpeaking() {
+  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('이 브라우저는 녹음을 지원하지 않아요. 최신 Chrome 또는 Safari를 사용해 주세요.', 4500); return; }
+  const sp = G.sp; sp.phase = 'play'; sp.idx = 0; sp.segs = []; sp.done = false;
+  showTurn(0);
+}
+function showTurn(i) {
+  const sp = G.sp; sp.idx = i; sp.blob = null;
+  const p = $('#prev'); if (p) { p.pause(); p.removeAttribute('src'); }
+  paintStage(); setDock('idle'); playNpc();
+}
+async function saveSeg() {
+  const sp = G.sp; if (!sp || sp.busy || !sp.blob) return;
+  sp.busy = true; setDock('busy');
+  try {
+    const pcm = await blobToPcm(sp.blob);
+    if (pcm.length < 16000 * 0.4) { toast('녹음이 너무 짧아요. 다시 녹음해 주세요.'); sp.busy = false; return setDock('ready'); }
+    sp.segs[sp.idx] = pcm; sp.segs.length = sp.idx + 1; sp.busy = false;
+    if (sp.url) { URL.revokeObjectURL(sp.url); sp.url = null; }
+    if (sp.idx + 1 < G.unit.script.length) showTurn(sp.idx + 1);
+    else { sp.blob = null; sp.done = true; const p = $('#prev'); if (p) { p.pause(); p.removeAttribute('src'); } paintStage(); setDock('done'); }
+  } catch (e) { sp.busy = false; toast('이 녹음 형식을 처리하지 못했어요. 다시 녹음하거나 mp3·m4a·wav 파일을 써 주세요.', 5000); setDock('ready'); }
+}
+async function againSp() {
+  if (spBusy() && !(await askConfirm('녹음한 내용이 모두 사라져요. 처음부터 다시 할까요?', '처음부터'))) return;
+  viewUnit('speaking');
 }
 function speak(text) {
   try {
@@ -702,13 +784,16 @@ function speak(text) {
 }
 function setDock(phase) {
   const sp = G.sp; if (!sp) return; sp.dock = phase;
+  const show = { start: ['bStart'], idle: ['bRec', 'bStop', 'bRe', 'bSave'], rec: ['bRec', 'bStop', 'bRe', 'bSave'], ready: ['bRec', 'bStop', 'bRe', 'bSave'], busy: ['bRec', 'bStop', 'bRe', 'bSave'], done: ['bAgain', 'bSub'] }[phase] || [];
+  ['bStart', 'bRec', 'bStop', 'bRe', 'bSave', 'bAgain', 'bSub'].forEach(id => { const b = $('#' + id); if (b) b.hidden = show.indexOf(id) < 0; });
+  const bx = $('#dockBtns'); if (bx) bx.style.setProperty('--n', show.length);
   const on = (id, f) => { const b = $('#' + id); if (b) b.disabled = !f; };
-  on('bRec', phase === 'idle'); on('bStop', phase === 'rec'); on('bRe', phase === 'ready'); on('bSub', phase === 'ready');
+  on('bRec', phase === 'idle'); on('bStop', phase === 'rec'); on('bRe', phase === 'ready'); on('bSave', phase === 'ready'); on('bSub', phase === 'done');
   const st = $('#dockSt'), pv = $('#prev'); if (!st) return;
   st.classList.toggle('rec', phase === 'rec');
-  $('#bRec').classList.toggle('recording', phase === 'rec');
+  const rb = $('#bRec'); if (rb) rb.classList.toggle('recording', phase === 'rec');
   pv.hidden = phase !== 'ready';
-  st.textContent = ({ idle: '🎤 버튼을 눌러 대본을 처음부터 읽어 보세요', rec: '● 녹음 중…', ready: '들어 보고 제출하거나, 다시 녹음하세요', busy: '처리 중이에요. 잠시만 기다려 주세요…' })[phase];
+  st.textContent = ({ start: '▶ 시작을 누르면 상대가 먼저 말해요', idle: `🎤 ${sp.idx + 1}번째 대사를 말해 보세요`, rec: '● 녹음 중…', ready: '들어 보고 저장하거나, 다시 녹음하세요', busy: '처리 중이에요. 잠시만 기다려 주세요…', done: '✅ 모두 녹음했어요. 제출하면 AI가 검증해요' })[phase];
 }
 function pickMime() {
   const c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
@@ -716,7 +801,7 @@ function pickMime() {
 }
 async function startRec() {
   const sp = G.sp; if (!sp || sp.busy) return;
-  try { speechSynthesis.cancel(); } catch (e) {}
+  try { speechSynthesis.cancel(); sp.npc && sp.npc.pause(); } catch (e) {}
   try { sp.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
   catch (e) { micModal(e); return; }
   const mime = pickMime(); sp.chunks = [];
@@ -734,14 +819,15 @@ async function startRec() {
   sp.rec.start(); sp.t0 = Date.now(); setDock('rec');
   sp.timer = setInterval(() => {
     const s = (Date.now() - sp.t0) / 1000, st = $('#dockSt');
-    if (st) st.textContent = `● 녹음 중 ${fmt(s)} / ${fmt(MAX_REC)}`;
-    if (s >= MAX_REC) stopRec();
+    if (st) st.textContent = `● 녹음 중 ${fmt(s)} / ${fmt(MAX_TURN)}`;
+    if (s >= MAX_TURN) stopRec();
   }, 250);
 }
 function onRecFile(e) {
   const sp = G.sp, f = e.target.files && e.target.files[0]; e.target.value = '';
   if (!sp || sp.busy || !f) return;
-  if (f.size > 12 * 1024 * 1024) return toast('파일이 너무 커요. 4분 이내의 녹음을 선택해 주세요.', 4500);
+  if (sp.phase !== 'play' || sp.done) return toast('먼저 [시작]을 눌러 대화를 시작해 주세요.');
+  if (f.size > 8 * 1024 * 1024) return toast('파일이 너무 커요. 1분 이내의 녹음을 선택해 주세요.', 4500);
   if (f.type && !/^audio\/|^video\/(mp4|webm|3gpp)/i.test(f.type)) return toast('오디오 파일을 선택해 주세요.');
   try { sp.rec && sp.rec.state === 'recording' && stopRec(); } catch (x) {}
   sp.blob = f; if (sp.url) URL.revokeObjectURL(sp.url);
@@ -749,7 +835,7 @@ function onRecFile(e) {
   toast('녹음 파일을 불러왔어요. 들어 보고 제출하세요.', 3200);
 }
 function stopRec() { const sp = G.sp; if (sp && sp.rec && sp.rec.state === 'recording') sp.rec.stop(); }
-function reRec() { const sp = G.sp; if (!sp) return; sp.blob = null; const p = $('#prev'); if (p) { p.pause(); p.removeAttribute('src'); } setDock('idle'); startRec(); }
+function reRec() { const sp = G.sp; if (!sp || sp.busy) return; sp.blob = null; const p = $('#prev'); if (p) { p.pause(); p.removeAttribute('src'); } setDock('idle'); startRec(); }
 
 function blobToB64(blob) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = rej; r.readAsDataURL(blob); });
@@ -762,8 +848,8 @@ function encodeWav(f32, rate) {
   for (let i = 0; i < f32.length; i++) { const s = Math.max(-1, Math.min(1, f32[i])); v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true); }
   return new Blob([buf], { type: 'audio/wav' });
 }
-// 어떤 브라우저에서 녹음해도 16kHz 모노 WAV로 통일 (AI 음성 인식 호환성)
-async function blobToWav(blob) {
+// 어떤 브라우저에서 녹음해도 16kHz 모노 PCM으로 통일 (AI 음성 인식 호환성 + 하나의 파일로 합치기)
+async function blobToPcm(blob) {
   const AC = window.AudioContext || window.webkitAudioContext, OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const buf = await readBuf(blob);
   const ctx = new AC();
@@ -772,30 +858,33 @@ async function blobToWav(blob) {
   const rate = 16000, off = new OAC(1, Math.max(1, Math.ceil(audio.duration * rate)), rate);
   const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
   const out = await new Promise((res, rej) => { const p = off.startRendering(); if (p && p.then) p.then(res, rej); else off.oncomplete = e => res(e.renderedBuffer); });
-  return { blob: encodeWav(out.getChannelData(0), rate), mime: 'audio/wav' };
+  return new Float32Array(out.getChannelData(0));
 }
 function readBuf(blob) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsArrayBuffer(blob); });
 }
 
 async function submitSpeaking() {
-  const sp = G.sp; if (!sp || sp.busy || !sp.blob) return;
+  const sp = G.sp; if (!sp || sp.busy || !sp.done) return;
+  const n = G.unit.script.length, gap = GAP_SEC * 16000;
+  const total = sp.segs.reduce((a, s) => a + s.length, 0) + gap * (n - 1);
+  if (total / 16000 > MAX_REC) return toast(`전체 녹음이 너무 길어요. ${fmt(MAX_REC)} 이내로 줄여 주세요. (지금 ${fmt(total / 16000)})`, 5000);
   sp.busy = true; setDock('busy');
-  const steps = ['녹음 파일을 준비하는 중…', '녹음을 서버로 보내는 중…', '음성을 글자로 바꾸는 중…', 'AI가 전체 대화를 평가하는 중…']; let k = 0;
+  const steps = ['녹음을 하나로 합치는 중…', '서버로 보내는 중…', '음성을 글자로 바꾸는 중…', '대본과 비교해 채점하는 중…']; let k = 0;
   setLoading(true, steps[0]);
-  const tm = setInterval(() => { k = Math.min(k + 1, steps.length - 1); $('#loadTxt').textContent = steps[k]; }, 3500);
+  const tm = setInterval(() => { k = Math.min(k + 1, steps.length - 1); $('#loadTxt').textContent = steps[k]; }, 2200);
   try {
-    let payload;
-    try { payload = await blobToWav(sp.blob); }
-    catch (e) { payload = { blob: sp.blob, mime: (sp.blob.type || 'audio/webm').split(';')[0] }; }
-    const b64 = await blobToB64(payload.blob);
+    // 대사 사이에 2초 무음을 넣어 하나의 파일로 합침
+    const all = new Float32Array(total); let o = 0;
+    sp.segs.forEach((s, i) => { all.set(s, o); o += s.length + (i < n - 1 ? gap : 0); });
+    const b64 = await blobToB64(encodeWav(all, 16000));
     $('#loadTxt').textContent = steps[1];
-    const r = await api('api_speakingSubmit', G.token, G.unit.unit_id, G.cs, b64, payload.mime);
+    const r = await api('api_speakingSubmit', G.token, G.unit.unit_id, G.cs, b64, 'audio/wav', n);
     clearInterval(tm); setLoading(false);
-    if (!r.ok) { toast(r.error, 4500); sp.busy = false; return setDock('ready'); }
+    if (!r.ok) { toast(r.error, 4500); sp.busy = false; return setDock('done'); }
     sp.phase = 'result'; sp.busy = false; viewSpResult(r);
     if (G.token && G.user) { G.units = G.units.map(x => x.unit_id === G.unit.unit_id ? Object.assign({}, x, { progress: Object.assign({}, x.progress || {}, { speaking_done: true, last_speaking_score: r.overall }) }) : x); }
-  } catch (e) { clearInterval(tm); setLoading(false); sp.busy = false; toast(e.message, 4500); setDock('ready'); }
+  } catch (e) { clearInterval(tm); setLoading(false); sp.busy = false; toast(e.message, 4500); setDock('done'); }
 }
 function viewSpResult(sum) {
   const o = sum.overall, results = sum.turns;
@@ -815,7 +904,7 @@ function viewSpResult(sum) {
         ${r.keywords && r.keywords.length ? `<div class="kws">${r.keywords.map(k => `<span class="kw ${k.hit ? 'y' : 'n'}">${esc(k.k)}</span>`).join('')}</div>` : ''}
         ${r.feedback ? `<div class="tbox fb"><small>교정 코멘트</small>${esc(r.feedback)}</div>` : ''}
       </div>
-      <div class="subs"><span>문자 유사도 ${r.similarity}%</span><span>AI 평가 ${r.ai_score}점</span></div></div>`).join('')}
+      <div class="subs"><span>문자 유사도 ${r.similarity}%</span></div></div>`).join('')}
     ${G.user ? '' : `<div class="card" style="margin-top:14px;background:var(--gold-soft)"><b>게스트 모드예요</b><p class="small muted" style="margin:4px 0 10px">이 결과는 저장되지 않아요. 로그인하면 점수와 취약 단원이 계정에 쌓여요.</p><button class="btn btn-primary btn-sm" data-act="login">로그인하고 기록하기</button></div>`}
     <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
       <button class="btn btn-ghost" data-act="retrySp">🔁 다시 연습</button>
@@ -1016,6 +1105,8 @@ const ACT = {
   toggleTr: () => { const b = $('#trBox'); b.hidden = !b.hidden; $('#trBtn').textContent = b.hidden ? '📄 대본 보기' : '📄 대본 숨기기'; },
   markListen: () => markListening(false),
   /* 말하기 */
+  startSp: () => startSpeaking(), saveSeg: () => saveSeg(), againSp: () => againSp(), npcPlay: () => playNpc(),
+  toggleMy: () => { const sp = G.sp; if (!sp) return; sp.showMy = !sp.showMy; paintStage(); },
   rec: () => startRec(), stop: () => stopRec(), rerec: () => reRec(), submit: () => submitSpeaking(),
   tts: t => speak(t.dataset.text),
   retrySp: () => viewUnit('speaking'),
@@ -1045,7 +1136,7 @@ function goHome() { cleanup(); if (G.user && G.user.role === 'admin' && typeof w
   };
   const route = r => {
     if (BOOT.unit) {
-      if (r.unit) { G.entered = true; G.unit = r.unit; G.uc[r.unit.unit_id] = r.unit; viewUnit(BOOT.course || 'listening'); }
+      if (r.unit) { G.entered = true; G.unit = r.unit; G.uc[r.unit.unit_id] = r.unit; viewUnit(BOOT.course || defCourse(r.unit)); }
       else { toast('QR에 해당하는 단원을 찾을 수 없어요. 단원을 직접 골라 주세요.', 4000); viewUnits(false); }
     } else if (G.user && G.user.role === 'admin') openAdmin('overview');
     else if (G.user) viewUnits(false);
@@ -1203,7 +1294,7 @@ async function adOpenUnit(id) {
 }
 function adNewUnit() {
   const max = (A.units || []).reduce((m, u) => Math.max(m, u.unit_order || 0), 0);
-  adLoadEditor({ unit: { unit_id: '', unit_order: max + 1, unit_title: '', audio_url: '', transcript: '', is_active: true }, dialogues: [], questions: [] }, true);
+  adLoadEditor({ unit: { unit_id: '', unit_order: max + 1, unit_title: '', audio_url: '', transcript: '', is_active: true, bg_url: '', intro_url: '', intro_text: '' }, dialogues: [], questions: [] }, true);
 }
 function adLoadEditor(d, isNew) {
   A.unit = d.unit; A.isNew = isNew; A.dirty = {}; A.sub = 'basic';
@@ -1212,11 +1303,11 @@ function adLoadEditor(d, isNew) {
   viewAdmin('units');
 }
 function adEditor() {
-  const u = A.unit, S = [['basic', '🎧', '듣기·기본'], ['speaking', '🗣️', '말하기'], ['assess', '📝', '자기평가']];
+  const u = A.unit, S = [['basic', '🎧', '듣기·기본'], ['intro', '🎬', '도입'], ['speaking', '🗣️', '말하기'], ['assess', '📝', '자기평가']];
   $('#adBody').innerHTML = `<div class="uhead"><div><div class="crumb">${A.isNew ? '새 단원' : 'UNIT ' + esc(u.unit_id)}</div><h3 class="sec-title">${esc(u.unit_title || '제목 없음')}</h3></div>
     <button class="btn btn-ghost btn-sm" data-act="adBack">← 단원 목록</button></div>
     <div class="seg">${S.map(t => `<button class="${A.sub === t[0] ? 'on' : ''}" data-act="adSub" data-sub="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}</div><div id="adSub"></div>`;
-  ({ basic: adSubBasic, speaking: adSubSpeaking, assess: adSubAssess })[A.sub]();
+  ({ basic: adSubBasic, intro: adSubIntro, speaking: adSubSpeaking, assess: adSubAssess })[A.sub]();
 }
 const adNeedSave = () => { $('#adSub').innerHTML = '<div class="card"><p class="muted">먼저 <b>듣기·기본</b> 탭에서 단원 정보를 저장해 주세요.</p></div>'; };
 
@@ -1225,7 +1316,7 @@ function adSubBasic() {
   const u = A.unit, pv = adAudioUrl(u.audio_url);
   const base = BOOT.appUrl || '';
   const qr = (!A.isNew && base) ? `<div class="card" style="margin-top:14px"><b>🔗 QR 코드용 주소</b><p class="small muted" style="margin:4px 0 4px">이 주소로 QR 코드를 만들어 교재에 인쇄하세요.</p>
-    ${[['listening', '🎧 듣기'], ['speaking', '🗣️ 말하기'], ['assessment', '📝 자기평가']].map(c => { const url = `${base}?unit=${encodeURIComponent(u.unit_id)}&course=${c[0]}`; return `<div class="qrrow"><b>${c[1]}</b><input class="txt" readonly value="${esc(url)}" onfocus="this.select()" aria-label="${c[1]} 주소"><button class="btn btn-ghost btn-sm" data-act="copyText" data-text="${esc(url)}">복사</button></div>`; }).join('')}</div>` : '';
+    ${[['intro', '🎬 도입'], ['listening', '🎧 듣기'], ['speaking', '🗣️ 말하기'], ['assessment', '📝 자기평가']].map(c => { const url = `${base}?unit=${encodeURIComponent(u.unit_id)}&course=${c[0]}`; return `<div class="qrrow"><b>${c[1]}</b><input class="txt" readonly value="${esc(url)}" onfocus="this.select()" aria-label="${c[1]} 주소"><button class="btn btn-ghost btn-sm" data-act="copyText" data-text="${esc(url)}">복사</button></div>`; }).join('')}</div>` : '';
   $('#adSub').innerHTML = `<div class="card">
     <div class="g2"><div class="fld"><label>단원 코드 (QR 파라미터)</label><input class="txt" data-ad="unit" data-f="unit_id" value="${esc(u.unit_id)}" ${A.isNew ? '' : 'readonly'} placeholder="예: U03" maxlength="30" autocomplete="off"></div>
     <div class="fld"><label>정렬 순서</label><input class="txt" type="number" data-ad="unit" data-f="unit_order" value="${esc(u.unit_order)}"></div></div>
@@ -1248,7 +1339,7 @@ async function adSaveUnit() {
   if (!String(u.unit_title).trim()) return toast('단원명을 입력해 주세요.');
   setLoading(true, '저장하는 중…');
   try {
-    await api('api_admin_saveUnit', G.token, { unit_id: u.unit_id, unit_order: u.unit_order, unit_title: u.unit_title, audio_url: u.audio_url, transcript: u.transcript, is_active: !!u.is_active, isNew: A.isNew });
+    await api('api_admin_saveUnit', G.token, { unit_id: u.unit_id, unit_order: u.unit_order, unit_title: u.unit_title, audio_url: u.audio_url, transcript: u.transcript, is_active: !!u.is_active, bg_url: u.bg_url, intro_url: u.intro_url, intro_text: u.intro_text, isNew: A.isNew });
     const was = A.isNew; A.isNew = false; A.dirty.unit = 0; setLoading(false);
     toast(was ? '단원을 만들었어요. 이제 말하기와 자기평가를 채워 보세요.' : '저장했어요.'); adEditor();
   } catch (e) { setLoading(false); toast(e.message, 5000); }
@@ -1258,6 +1349,21 @@ async function adDelUnit() {
   setLoading(true, '삭제하는 중…');
   try { await api('api_admin_deleteUnit', G.token, A.unit.unit_id); setLoading(false); toast('삭제했어요.'); A.unit = null; A.dirty = {}; viewAdmin('units'); }
   catch (e) { setLoading(false); toast(e.message, 4000); }
+}
+
+/* 2-1b) 도입 영상 */
+function adSubIntro() {
+  if (A.isNew) return adNeedSave();
+  const u = A.unit, v = embedHtml(u.intro_url);
+  $('#adSub').innerHTML = `<div class="card"><b>🎬 도입 영상</b>
+    <p class="small muted" style="margin-top:2px">학습자가 단원을 열면 가장 먼저 보는 <b>도입</b> 탭에 표시돼요. YouTube·Vimeo·Drive 공유 링크나 mp4 주소를 붙여 넣거나, 영상 파일을 올릴 수 있어요.</p>
+    <div style="margin:12px 0">${v || '<p class="muted small">등록된 영상이 없어요.</p>'}</div>
+    <div class="adrow"><label class="btn btn-ghost btn-sm">🎞️ 영상 파일 올리기<input type="file" hidden accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" data-ad="file" data-kind="video"></label>
+    ${u.intro_url ? '<button class="btn btn-ghost btn-sm" data-act="adClearIntro">영상 제거</button>' : ''}</div>
+    <div class="fld" style="margin-top:10px"><label>영상 주소 (YouTube / Vimeo / Drive 공유 링크 / mp4)</label><input class="txt" data-ad="unit" data-f="intro_url" value="${esc(u.intro_url)}" placeholder="https://www.youtube.com/watch?v=…"></div>
+    <p class="small muted">파일 업로드는 11MB 이하예요. 더 큰 영상은 YouTube(일부 공개/링크 공개)나 Drive에 올리고 주소를 붙여 넣으세요. 저장 후 미리보기가 갱신돼요.</p>
+    <div class="fld" style="margin-top:12px"><label>도입 설명 (선택)</label><textarea class="txt" rows="4" data-ad="unit" data-f="intro_text" maxlength="1000" placeholder="이번 단원에서 배울 내용을 짧게 안내해 주세요.">${esc(u.intro_text)}</textarea></div>
+    <button class="btn btn-primary btn-block" data-act="adSaveUnit">저장</button></div>`;
 }
 
 /* 2-2) 말하기: 등장인물(사전 설정)을 골라 대본 구성 */
@@ -1273,6 +1379,9 @@ function adTurnHtml(d, i) {
       <select class="txt" ${at('character_id')}>${adChOpt(d.character_id)}</select></div>
       ${!d.character_id && d.character_name ? `<p class="small muted" style="margin-top:4px">예전 설정: ${esc(d.character_name)}${d.character_title ? ' · ' + esc(d.character_title) : ''} — 목록에서 등장인물을 골라 주세요.</p>` : ''}</div>
     <div class="fld"><label>상대 대사 (TTS로 읽어 줘요)</label><textarea class="txt" rows="2" ${at('npc_line')}>${esc(d.npc_line)}</textarea></div>
+    <div class="fld"><label>상대 음성 <span class="small muted">(선택 · 없으면 TTS 음성으로 읽어 줘요)</span></label>
+      ${d.npc_audio_url ? `<audio controls preload="none" src="${esc(adAudioUrl(d.npc_audio_url))}" style="width:100%;margin-bottom:6px"></audio>` : ''}
+      <div class="adrow"><label class="btn btn-ghost btn-sm">🎙️ 음성 파일 올리기<input type="file" hidden accept="audio/*,.mp3,.m4a,.wav" data-ad="file" data-kind="npcaudio" data-i="${i}"></label>${d.npc_audio_url ? `<button class="btn btn-ghost btn-sm" data-act="adClearNpc" data-i="${i}">음성 제거</button>` : ''}</div></div>
     <div class="fld"><label>학습자가 말할 대본 (기준 정답)</label><textarea class="txt" rows="2" ${at('ref_answer')}>${esc(d.ref_answer)}</textarea></div>
     <div class="fld"><label>핵심 키워드 (쉼표로 구분, 선택)</label><input class="txt" ${at('keywords')} value="${esc(d.keywords)}" placeholder="예: 미국,왔어요"></div></div>`;
 }
@@ -1282,8 +1391,13 @@ async function adSubSpeaking() {
     $('#adSub').innerHTML = emptyBox('등장인물을 불러오는 중…', '…');
     try { A.chars = await api('api_admin_listCharacters', G.token); } catch (e) { $('#adSub').innerHTML = emptyBox(e.message, '!'); return; }
   }
-  $('#adSub').innerHTML = `<div class="card"><b>🗣️ 말하기 대본</b>
-    <p class="small muted" style="margin-top:2px">학습자는 아래 대본을 처음부터 끝까지 <b>한 번에 녹음</b>해 제출해요. 대화마다 미리 등록한 등장인물을 고르세요. 등장인물은 <b>등장인물</b> 탭에서 추가·수정해요.</p>
+  const bgp = imgUrl(A.unit.bg_url);
+  $('#adSub').innerHTML = `<div class="card"><b>🖼️ 말하기 배경 이미지</b>
+    <p class="small muted" style="margin-top:2px">대화 장면의 배경이에요(예: 카페, 교실, 면접장). 가운데에 상대 등장인물이 나타나요. 가로로 긴 사진을 권장해요(1280px 이내로 자동 조정).</p>
+    <div class="stage" style="min-height:150px;padding:16px;margin:10px 0;${bgp ? `background-image:url('${esc(bgp)}')` : ''}"><span class="st-title">${bgp ? '미리보기' : '배경 없음 (기본 색 배경)'}</span></div>
+    <div class="adrow"><label class="btn btn-ghost btn-sm">🖼️ 배경 이미지 올리기<input type="file" hidden accept="image/*" data-ad="file" data-kind="bg"></label>${A.unit.bg_url ? '<button class="btn btn-ghost btn-sm" data-act="adClearBg">배경 제거</button>' : ''}<button class="btn btn-primary btn-sm" data-act="adSaveUnit">배경 저장</button></div></div>
+    <div class="card" style="margin-top:14px"><b>🗣️ 말하기 대본</b>
+    <p class="small muted" style="margin-top:2px">대화는 한 줄씩 나타나고, 학습자는 대사마다 녹음·저장한 뒤 마지막에 한 번에 제출해요(대사 사이 2초 무음을 넣어 하나의 파일로 합쳐요). 대화마다 미리 등록한 등장인물을 고르세요. 등장인물은 <b>등장인물</b> 탭에서 추가·수정해요.</p>
     ${A.chars.length ? `<div class="fld" style="margin-top:10px"><label>모든 대화에 같은 인물 적용</label><select class="txt" data-ad="allchar">${adChOpt('')}</select></div>` : `<p class="small" style="margin-top:8px;color:var(--dan)">등록된 등장인물이 없어요. 먼저 <b>등장인물</b> 탭에서 추가해 주세요.</p>`}</div>
     <div id="adTurns">${A.dlg.map(adTurnHtml).join('')}</div>
     <button class="btn btn-ghost btn-block" style="margin-top:12px" data-act="adAddTurn">＋ 대화 추가</button>
@@ -1301,7 +1415,7 @@ async function adSaveDlg() {
   const miss = A.dlg.findIndex(d => !d.character_id); if (miss >= 0) return toast(`${miss + 1}번째 대화의 등장인물을 골라 주세요.`);
   setLoading(true, '저장하는 중…');
   try {
-    const rows = A.dlg.map(d => ({ character_id: d.character_id, npc_line: d.npc_line, ref_answer: d.ref_answer, keywords: d.keywords }));
+    const rows = A.dlg.map(d => ({ character_id: d.character_id, npc_line: d.npc_line, ref_answer: d.ref_answer, keywords: d.keywords, npc_audio_url: d.npc_audio_url }));
     const r = await api('api_admin_saveDialogues', G.token, A.unit.unit_id, rows);
     A.dirty.dlg = 0; setLoading(false); toast(`대화 ${r.saved}개를 저장했어요.`);
   } catch (e) { setLoading(false); toast(e.message, 5000); }
@@ -1388,22 +1502,26 @@ function adResize(file, max, square, png) {
 }
 async function adUploadFile(input) {
   const f = input.files && input.files[0]; input.value = ''; if (!f) return;
-  const kind = input.dataset.kind;
-  if (kind === 'audio' && f.size > 11 * 1024 * 1024) return toast('음원이 너무 커요(11MB 이하). Drive에 올린 뒤 공유 링크를 붙여 넣어 주세요.', 5500);
-  if (kind !== 'audio' && !/^image\//.test(f.type)) return toast('이미지 파일을 선택해 주세요.');
-  if (kind !== 'audio' && f.size > 5 * 1024 * 1024) return toast('이미지가 너무 커요. 5MB 이하 파일을 선택해 주세요.', 4500);
+  const kind = input.dataset.kind, isAud = kind === 'audio' || kind === 'npcaudio', isVid = kind === 'video';
+  if ((isAud || isVid) && f.size > 11 * 1024 * 1024) return toast('파일이 너무 커요(11MB 이하). Drive나 YouTube에 올린 뒤 주소를 붙여 넣어 주세요.', 5500);
+  if (!isAud && !isVid && !/^image\//.test(f.type)) return toast('이미지 파일을 선택해 주세요.');
+  if (!isAud && !isVid && f.size > 8 * 1024 * 1024) return toast('이미지가 너무 커요. 8MB 이하 파일을 선택해 주세요.', 4500);
   setLoading(true, '파일을 올리는 중… (큰 파일은 1분 정도 걸려요)');
   try {
     let blob = f, mime = f.type || '';
     if (kind === 'avatar') { const r = await adResize(f, 400, true, false); blob = r.blob; mime = r.mime; }
     else if (kind === 'logo') { const r = await adResize(f, 256, true, true); blob = r.blob; mime = r.mime; }
+    else if (kind === 'bg') { const r = await adResize(f, 1280, false, false); blob = r.blob; mime = r.mime; }
     const b64 = await blobToB64(blob);
-    const r = await api('api_admin_uploadFile', G.token, kind === 'audio' ? 'audio' : 'image', kind === 'audio' ? (A.unit && A.unit.unit_id) : kind, f.name, mime, b64);
+    const r = await api('api_admin_uploadFile', G.token, isAud ? 'audio' : isVid ? 'video' : 'image', (A.unit && A.unit.unit_id) || kind, f.name, mime, b64);
     setLoading(false);
     if (kind === 'audio') { A.unit.audio_url = r.url; A.dirty.unit = 1; adSubBasic(); }
+    else if (kind === 'npcaudio') { A.dlg[+input.dataset.i].npc_audio_url = r.url; A.dirty.dlg = 1; adSubSpeaking(); }
+    else if (kind === 'video') { A.unit.intro_url = r.url; A.dirty.unit = 1; adSubIntro(); }
+    else if (kind === 'bg') { A.unit.bg_url = r.url; A.dirty.unit = 1; adSubSpeaking(); }
     else if (kind === 'avatar') { A.chars[+input.dataset.i].img_url = r.url; adDrawChars(); }
     else { G.settings.logo_url = r.url; A.setDirty = true; applySettings(); adDrawDesign(); }
-    toast(r.shared ? (kind === 'avatar' ? '업로드했어요. 이 카드의 저장 버튼을 눌러 반영하세요.' : '업로드했어요. 아래 저장 버튼을 눌러 반영하세요.') : '업로드는 됐지만 공유 설정에 실패했어요. Drive에서 "링크가 있는 모든 사용자"로 바꿔 주세요.', 6000);
+    toast(r.shared ? ({ avatar: '업로드했어요. 이 카드의 저장 버튼을 눌러 반영하세요.', npcaudio: '업로드했어요. "말하기 내용 저장"을 눌러 반영하세요.' }[kind] || '업로드했어요. 저장 버튼을 눌러 반영하세요.') : '업로드는 됐지만 공유 설정에 실패했어요. Drive에서 "링크가 있는 모든 사용자"로 바꿔 주세요.', 6000);
   } catch (e) { setLoading(false); toast(e.message, 5000); }
 }
 
@@ -1491,12 +1609,15 @@ Object.assign(ACT, {
   adSaveUnit: () => adSaveUnit(),
   adDelUnit: () => adDelUnit(),
   adClearAudio: () => { A.unit.audio_url = ''; A.dirty.unit = 1; adSubBasic(); },
+  adClearIntro: () => { A.unit.intro_url = ''; A.dirty.unit = 1; adSubIntro(); },
+  adClearNpc: t => { A.dlg[+t.dataset.i].npc_audio_url = ''; A.dirty.dlg = 1; adSubSpeaking(); },
+  adClearBg: () => { A.unit.bg_url = ''; A.dirty.unit = 1; adSubSpeaking(); },
   adChAdd: () => { A.chars.push({ character_id: '', name: '', title: '', img_url: '' }); adDrawChars(); },
   adChSave: t => adChSave(+t.dataset.i),
   adChDel: t => adChDel(+t.dataset.i),
   adClearLogo: () => { G.settings.logo_url = ''; A.setDirty = true; applySettings(); adDrawDesign(); },
   adAddTurn: () => {
-    const pv = A.dlg[A.dlg.length - 1] || {}; A.dlg.push({ character_id: pv.character_id || '', character_name: pv.character_name || '', character_title: pv.character_title || '', character_img_url: pv.character_img_url || '', npc_line: '', ref_answer: '', keywords: '' }); A.dirty.dlg = 1; adSubSpeaking();
+    const pv = A.dlg[A.dlg.length - 1] || {}; A.dlg.push({ character_id: pv.character_id || '', character_name: pv.character_name || '', character_title: pv.character_title || '', character_img_url: pv.character_img_url || '', npc_line: '', ref_answer: '', keywords: '', npc_audio_url: '' }); A.dirty.dlg = 1; adSubSpeaking();
     const l = $('#adTurns').lastElementChild; if (l) l.scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
   adTurnUp: t => { const i = +t.dataset.i; if (i > 0) { [A.dlg[i - 1], A.dlg[i]] = [A.dlg[i], A.dlg[i - 1]]; A.dirty.dlg = 1; adSubSpeaking(); } },
