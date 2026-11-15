@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>한말 · 대학 한국어 말하기</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%232C4A8F%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2738%27 text-anchor=%27middle%27 fill=%27white%27 font-family=%27serif%27%3E한%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" media="print" onload="this.media='all'">
 <style>
+[hidden]{display:none!important}
 :root{
   --paper:#F6F2E9; --paper2:#EDE6D6; --card:#fff; --ink:#1D1B24; --ink2:#5B5866; --ink3:#8E8A97;
   --line:#E6DFCF; --indigo:#2C4A8F; --indigo2:#1F3669; --indigo-soft:#E8EDF8;
@@ -30,7 +33,7 @@ h1,h2,h3,p{margin:0}
 /* 상단 바 */
 .topbar{position:sticky;top:0;z-index:30;background:rgba(246,242,233,.86);background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
 .topbar .wrap{display:flex;align-items:center;gap:10px;height:60px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-weight:900;font-size:20px;color:var(--indigo2);flex:none}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-weight:900;font-size:19px;color:var(--indigo2);flex:0 1 auto;min-width:0;text-align:left}
 .brand i{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--indigo);color:#fff;font-style:normal;font-size:19px;box-shadow:0 4px 12px rgba(44,74,143,.35)}
 .tb-title{flex:1;min-width:0;text-align:center;font-weight:600;color:var(--ink2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tb-right{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
@@ -246,8 +249,19 @@ ul.bul{margin:6px 0 0;padding-left:20px} ul.bul li{margin:4px 0}
   .sec-title{font-size:21px}
   .msg{max-width:94%}
   .badge{max-width:84px}
+  .brand{font-size:15px;gap:8px}
+  .topbar .wrap{gap:8px}
+  .tb-right{gap:6px}
+  .tb-right .lbl{display:none}.tb-right .ico{display:inline-block}
+  .tb-right .btn-ghost.btn-sm{padding:0;width:40px;height:40px;display:grid;place-items:center}
 }
-.brand span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand span{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:normal;line-height:1.2;word-break:keep-all;overflow-wrap:anywhere}
+.brand i.logo{background:#fff;box-shadow:0 0 0 1px var(--line);overflow:hidden}
+.brand i{flex:none}.brand i img{width:100%;height:100%;object-fit:cover;display:block}
+.tb-right .ico{display:none;vertical-align:-4px}
+.sc-turn{margin-bottom:6px}
+.chrow{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.chpick{display:flex;gap:10px;align-items:center}
 .notice{display:grid;gap:10px;text-align:left;background:var(--gold-soft);border:1px solid #E8D7A8;border-radius:16px;padding:14px 16px;margin:0 auto 16px;max-width:440px;font-size:14px;line-height:1.55}
 .notice .nrow{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:430px){.tb-right .badge.me{display:none}.tb-right .btn-sm{padding:6px 10px}}
@@ -365,8 +379,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 const emptyBox = (t, g = '말') => `<div class="empty"><b>${g}</b>${esc(t)}</div>`;
 
 /* ───────── 상태 ───────── */
-const G = { token: null, user: null, units: [], unit: null, course: 'listening', entered: false, sessions: {}, googleClientId: '', sp: null, as: null, au: null, chartUnit: 'ALL', settings: BOOT.settings || {} };
+const G = { token: null, user: null, units: [], unit: null, course: 'listening', entered: false, cs: 0, uc: {}, googleClientId: '', sp: null, as: null, au: null, chartUnit: 'ALL', settings: BOOT.settings || {} };
 
+const spBusy = () => !!(G.sp && G.sp.phase === 'chat' && (G.sp.blob || G.sp.dock === 'rec'));
 function cleanup() {
   if (G.au) { try { G.au.el.pause(); } catch (e) {} G.au = null; }
   try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {}
@@ -395,11 +410,12 @@ const FONT_MAP = {
 const _fontLoaded = {};
 function loadFont(k) {
   const f = FONT_MAP[k]; if (!f || !f.g || _fontLoaded[k]) return; _fontLoaded[k] = 1;
-  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.g + '&display=swap'; document.head.appendChild(l);
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f.g + '&display=swap'; l.media = 'print'; l.onload = () => { l.media = 'all'; }; document.head.appendChild(l);
 }
 const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const mixHex = (h, t, a) => { const c = hexRgb(h), d = hexRgb(t); return '#' + c.map((v, i) => Math.round(v + (d[i] - v) * a).toString(16).padStart(2, '0')).join(''); };
 const st = () => G.settings || BOOT.settings || {};
+function imgUrl(u) { u = String(u || '').trim(); const m = u.match(/\/d\/([\w-]{10,})/) || u.match(/[?&]id=([\w-]{10,})/); return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : (/^https:\/\//i.test(u) ? u : ''); }
 function applySettings() {
   const s = st(), r = document.documentElement.style, ok = h => /^#[0-9a-fA-F]{6}$/.test(h || '');
   if (ok(s.primary_color)) { r.setProperty('--indigo', s.primary_color); r.setProperty('--indigo2', mixHex(s.primary_color, '#000000', .28)); r.setProperty('--indigo-soft', mixHex(s.primary_color, '#ffffff', .9)); }
@@ -410,7 +426,14 @@ function applySettings() {
   if (hf) { loadFont(s.heading_font); r.setProperty('--serif', hf.css + ",'Nanum Myeongjo',serif"); }
   const fs = Number(s.base_font_size); if (fs >= 14 && fs <= 20) r.setProperty('--fs', fs + 'px');
   const bm = $('#brandMark'), bn = $('#brandName');
-  if (bm && s.brand_mark) bm.textContent = s.brand_mark;
+  if (bm) {
+    const lu = imgUrl(s.logo_url), key = lu + '|' + (s.brand_mark || '한');
+    if (bm.dataset.k !== key) {
+      bm.dataset.k = key; bm.classList.toggle('logo', !!lu);
+      if (lu) { bm.textContent = ''; const im = new Image(); im.alt = ''; im.onerror = () => { bm.classList.remove('logo'); bm.textContent = s.brand_mark || '한'; }; im.src = lu; bm.appendChild(im); }
+      else bm.textContent = s.brand_mark || '한';
+    }
+  }
   if (bn && s.site_name) bn.textContent = s.site_name;
   if (s.site_name) document.title = s.site_name;
 }
@@ -475,7 +498,7 @@ function renderTopbar() {
   $('#tbTitle').textContent = G.unit ? G.unit.unit_title : '';
   const u = G.user;
   $('#tbRight').innerHTML = u
-    ? `<span class="badge me" title="${esc(u.email)}">👤 ${esc(u.name)}</span>${u.role === 'admin' ? '<button class="btn btn-primary btn-sm" data-act="adminHome">관리자</button>' : ''}<button class="btn btn-ghost btn-sm" data-act="mypage">마이페이지</button><button class="iconbtn" data-act="logout" aria-label="로그아웃" title="로그아웃">⎋</button>`
+    ? `<span class="badge me" title="${esc(u.email)}">👤 ${esc(u.name)}</span>${u.role === 'admin' ? '<button class="btn btn-primary btn-sm" data-act="adminHome">관리자</button>' : ''}<button class="btn btn-ghost btn-sm" data-act="mypage" aria-label="마이페이지" title="마이페이지"><span class="lbl">마이페이지</span><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button><button class="iconbtn" data-act="logout" aria-label="로그아웃" title="로그아웃"><svg class="ico" style="display:inline-block;vertical-align:-4px" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>`
     : `<span class="badge">게스트</span><button class="btn btn-primary btn-sm" data-act="login">로그인</button>`;
 }
 
@@ -533,14 +556,20 @@ async function viewUnits(refresh = true) {
 
 /* ───────── 단원 화면 ───────── */
 async function openUnit(id, course) {
-  cleanup(); G.entered = true; setLoading(true, '단원을 불러오는 중…');
+  cleanup(); G.entered = true;
+  if (G.uc[id]) {   // 캐시된 단원은 바로 열고, 뒤에서 최신 내용으로 갱신
+    G.unit = G.uc[id]; viewUnit(course || 'listening');
+    api('api_getUnit', id).then(u => { G.uc[id] = u; if (G.unit && G.unit.unit_id === u.unit_id && !(G.sp && (G.sp.blob || G.sp.dock === 'rec'))) G.unit = u; }).catch(() => {});
+    return;
+  }
+  setLoading(true, '단원을 불러오는 중…');
   try { G.unit = await api('api_getUnit', id); }
   catch (e) { setLoading(false); toast(e.message); return viewUnits(); }
-  setLoading(false); G.sessions = {};
+  setLoading(false); G.uc[id] = G.unit;
   viewUnit(course || 'listening');
 }
 function viewUnit(course) {
-  cleanup(); G.course = course; renderTopbar();
+  cleanup(); G.course = course; G.cs = Date.now(); renderTopbar();
   const u = G.unit;
   $('#main').innerHTML = `<section class="fade">
     <div class="uhead"><div><div class="crumb">UNIT ${esc(u.unit_id)}</div><h2 class="sec-title">${esc(u.unit_title)}</h2></div>
@@ -553,21 +582,13 @@ function viewUnit(course) {
 }
 async function switchTab(c) {
   if (c === G.course) return;
-  if (G.sp && G.sp.phase === 'chat' && !(await askConfirm('진행 중인 대화가 종료돼요. 이동할까요?', '이동'))) return;
+  if (spBusy() && !(await askConfirm('녹음한 내용이 사라져요. 이동할까요?', '이동'))) return;
   viewUnit(c);
 }
-async function getSession(course) {
-  const key = G.unit.unit_id + '|' + course;
-  if (G.sessions[key]) return G.sessions[key];
-  try { const r = await api('api_startSession', G.token, G.unit.unit_id, course); G.sessions[key] = r.session_id; return r.session_id; }
-  catch (e) { return 'G-local'; }
-}
-
 /* ───────── 코스 1: 듣기 ───────── */
 function panelListening() {
   const u = G.unit, el = $('#panel');
   if (!u.audio_url) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 듣기 음원이 아직 등록되지 않았어요.', '듣')}</div>`; return; }
-  getSession('listening');
   el.innerHTML = `<div class="card player fade">
     <audio id="aud" preload="metadata" src="${esc(u.audio_url)}"></audio>
     <div class="pl-main">
@@ -625,52 +646,38 @@ function abUpdate() {
 }
 async function markListening(auto) {
   try {
-    const sid = await getSession('listening');
-    await api('api_markListening', G.token, G.unit.unit_id, sid);
+    await api('api_markListening', G.token, G.unit.unit_id, G.cs);
     toast(auto ? '🎉 끝까지 들었어요! 듣기 완료' : '듣기 학습을 완료로 표시했어요.');
   } catch (e) { toast(e.message); }
 }
 
 /* ───────── 코스 2: 말하기 ───────── */
+const MAX_REC = 240;
 const whoHtml = t => esc(t.character_name || '대화 상대') + (t.character_title ? ` <span class="chip">${esc(t.character_title)}</span>` : '');
 function avatarHtml(t, big) {
   const ch = esc((t.character_name || '말').charAt(0));
   return `<div class="avatar ${big ? 'lg' : ''}">${t.character_img_url ? `<img src="${esc(t.character_img_url)}" alt="${esc(t.character_name)}" data-ch="${ch}" onerror="this.replaceWith(this.dataset.ch)">` : ch}</div>`;
 }
+function scriptHtml(sc) {
+  return sc.map((t, i) => `<div class="sc-turn">
+    <div class="msg npc">${avatarHtml(t)}<div class="bubble"><div class="who">${esc(t.character_name || '상대')}${t.character_title ? ' · ' + esc(t.character_title) : ''}</div>${esc(t.npc_line)}<br><button class="ttsbtn" data-act="tts" data-text="${esc(t.npc_line)}">🔊 듣기</button></div></div>
+    <div class="msg me"><div class="bubble"><div class="who">${i + 1}. 내가 말할 대사</div>${esc(t.my_line)}</div></div></div>`).join('');
+}
 function panelSpeaking() {
-  const u = G.unit, el = $('#panel');
-  if (!u.firstTurn) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 말하기 시나리오가 아직 없어요.', '말')}</div>`; return; }
-  const t = u.firstTurn;
-  G.sp = { phase: 'intro' };
-  el.innerHTML = `<div class="card fade" style="text-align:center">
-    <div style="display:grid;place-items:center">${avatarHtml(t, true)}</div>
-    <h3 class="serif" style="margin:14px 0 2px;font-size:22px">${esc(t.character_name || '대화 상대')}와(과) 이야기해요</h3>
-    <p class="muted small">${t.character_title ? esc(t.character_title) + ' · ' : ''}모두 ${u.turnCount}번의 대화를 주고받아요.</p>
-    <ol class="steps" style="text-align:left;max-width:420px;margin-left:auto;margin-right:auto">
-      <li><div><b>상대의 말을 들어요</b><br><span class="muted small">글자와 🔊 소리로 함께 나와요.</span></div></li>
-      <li><div><b>🎤 버튼을 눌러 대답해요</b><br><span class="muted small">마이크 허용이 필요해요. 다시 녹음할 수 있어요.</span></div></li>
-      <li><div><b>✅ 제출하면 다음 대화로 넘어가요</b><br><span class="muted small">마지막에 AI가 점수와 모범답안을 알려 줘요.</span></div></li>
-    </ol>
-    ${G.user ? '' : '<p class="chip" style="margin-bottom:14px">게스트 모드 · 결과는 저장되지 않아요</p><br>'}
-    ${micNotice()}<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" style="min-width:200px" data-act="startSp">대화 시작하기</button><button class="btn btn-ghost" data-act="micTest">🎙️ 마이크 점검</button></div>
-  </div>`;
-}
-async function startSpeaking() {
-  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('이 브라우저는 녹음을 지원하지 않아요. 최신 Chrome 또는 Safari를 사용해 주세요.', 4500); return; }
-  setLoading(true, '대화를 준비하고 있어요');
-  const sid = await getSession('speaking').catch(() => 'G-local');
-  delete G.sessions[G.unit.unit_id + '|speaking'];   // 연습할 때마다 새 세션
-  setLoading(false);
-  G.sp = { phase: 'chat', session_id: sid, turn: G.unit.firstTurn, idx: 1, total: G.unit.turnCount, results: [], busy: false, blob: null };
-  renderChat();
-}
-function renderChat() {
-  const sp = G.sp, t = sp.turn;
-  $('#panel').innerHTML = `<div class="fade">
-    <div class="card sp-head"><div id="spAv" style="flex:none">${avatarHtml(t)}</div><div class="grow"><b id="spWho">${whoHtml(t)}</b>
-      <div class="small muted"><span id="pgTxt"></span></div><div class="prog"><span id="pgBar"></span></div></div>
-      <button class="btn btn-ghost btn-sm" data-act="quitSp">종료</button></div>
-    <div class="chat" id="chat" aria-live="polite"></div>
+  const u = G.unit, el = $('#panel'), sc = u.script || [];
+  if (!sc.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 말하기 대본이 아직 없어요.', '말')}</div>`; return; }
+  G.sp = { phase: 'chat', busy: false, blob: null };
+  const first = sc[0];
+  el.innerHTML = `<div class="fade">
+    <div class="card sp-head"><div style="flex:none">${avatarHtml(first, true)}</div><div class="grow"><b>${whoHtml(first)}</b>
+      <div class="small muted">모두 ${sc.length}번의 대화 · 대본을 이어서 한 번에 녹음해요</div></div></div>
+    ${G.user ? '' : '<p class="chip" style="margin:12px 2px 0">게스트 모드 · 결과는 저장되지 않아요</p>'}
+    <ol class="steps" style="margin:14px 2px">
+      <li><div><b>아래 대본을 처음부터 끝까지 읽어요</b><br><span class="muted small">상대 대사는 읽지 않아도 돼요. 파란 말풍선 <b>내가 말할 대사</b>만 순서대로 말해요.</span></div></li>
+      <li><div><b>🎤 녹음 → ⏹ 멈춤</b><br><span class="muted small">최대 ${fmt(MAX_REC)}까지 녹음할 수 있고, 다시 녹음할 수 있어요.</span></div></li>
+      <li><div><b>✅ 제출하면 AI가 전체를 한 번에 평가해요</b></div></li></ol>
+    ${micNotice()}
+    <div class="chat" id="chat">${scriptHtml(sc)}</div>
     <div class="dock">
       <div class="dock-st" id="dockSt"></div>
       <audio id="prev" controls hidden></audio>
@@ -681,32 +688,9 @@ function renderChat() {
         <button class="dbtn" id="bRe" data-act="rerec"><span>🔁</span>재녹음</button>
         <button class="dbtn ok" id="bSub" data-act="submit"><span>✅</span>제출</button>
       </div>
-      <div style="text-align:center;margin-top:8px"><button class="btn btn-ghost btn-sm" data-act="fileRec">🎧 녹음이 안 되나요? 녹음 앱·파일로 대신하기</button></div></div></div>`;
-  $('#recFile').addEventListener('change', onRecFile);
-  addNpc(t); setDock('idle'); pgUpdate();
+      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" data-act="micTest">🎙️ 마이크 점검</button><button class="btn btn-ghost btn-sm" data-act="fileRec">🎧 녹음 앱·파일로 대신하기</button></div></div></div>`;
+  $('#recFile').addEventListener('change', onRecFile); setDock('idle');
 }
-function pgUpdate() {
-  const sp = G.sp; if (!sp) return;
-  if (sp.idx > sp.total) sp.total = sp.idx;
-  $('#pgTxt').textContent = `대화 ${sp.idx} / ${sp.total}`;
-  $('#pgBar').style.width = ((sp.idx - 1) / sp.total * 100 + 6) + '%';
-}
-function scrollChat() { const c = $('#chat'); if (c && c.lastElementChild) c.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-function addNpc(t) {
-  const hv = $('#spWho'); if (hv) { hv.innerHTML = whoHtml(t); $('#spAv').innerHTML = avatarHtml(t); }
-  $('#chat').insertAdjacentHTML('beforeend', `<div class="msg npc">${avatarHtml(t)}<div class="bubble"><div class="who">${esc(t.character_name || '상대')}${t.character_title ? ' · ' + esc(t.character_title) : ''}</div>${esc(t.npc_line)}<br><button class="ttsbtn" data-act="tts" data-text="${esc(t.npc_line)}">🔊 다시 듣기</button></div></div>`);
-  scrollChat(); speak(t.npc_line);
-}
-function addMe(r) {
-  $('#chat').insertAdjacentHTML('beforeend', `<div class="msg me"><div class="bubble"><div class="who">내 대답 (인식 결과)</div>${esc(r.stt_text)}</div></div>`);
-  scrollChat();
-}
-function addTyping(txt) {
-  removeTyping();
-  $('#chat').insertAdjacentHTML('beforeend', `<div class="msg npc" id="typing"><div class="bubble typing"><i></i><i></i><i></i><span class="steptxt" id="stepTxt">${esc(txt || '')}</span></div></div>`);
-  scrollChat();
-}
-function removeTyping() { const t = $('#typing'); if (t) t.remove(); }
 function speak(text) {
   try {
     if (!window.speechSynthesis) return;
@@ -724,7 +708,7 @@ function setDock(phase) {
   st.classList.toggle('rec', phase === 'rec');
   $('#bRec').classList.toggle('recording', phase === 'rec');
   pv.hidden = phase !== 'ready';
-  st.textContent = ({ idle: '🎤 버튼을 눌러 대답해 보세요', rec: '● 녹음 중…', ready: '들어 보고 제출하거나, 다시 녹음하세요', busy: '처리 중이에요. 잠시만 기다려 주세요…' })[phase];
+  st.textContent = ({ idle: '🎤 버튼을 눌러 대본을 처음부터 읽어 보세요', rec: '● 녹음 중…', ready: '들어 보고 제출하거나, 다시 녹음하세요', busy: '처리 중이에요. 잠시만 기다려 주세요…' })[phase];
 }
 function pickMime() {
   const c = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
@@ -750,14 +734,14 @@ async function startRec() {
   sp.rec.start(); sp.t0 = Date.now(); setDock('rec');
   sp.timer = setInterval(() => {
     const s = (Date.now() - sp.t0) / 1000, st = $('#dockSt');
-    if (st) st.textContent = `● 녹음 중 ${fmt(s)} / ${fmt(BOOT.maxTurnSec)}`;
-    if (s >= BOOT.maxTurnSec) stopRec();
+    if (st) st.textContent = `● 녹음 중 ${fmt(s)} / ${fmt(MAX_REC)}`;
+    if (s >= MAX_REC) stopRec();
   }, 250);
 }
 function onRecFile(e) {
   const sp = G.sp, f = e.target.files && e.target.files[0]; e.target.value = '';
   if (!sp || sp.busy || !f) return;
-  if (f.size > 8 * 1024 * 1024) return toast('파일이 너무 커요. 60초 이내의 짧은 녹음을 선택해 주세요.', 4500);
+  if (f.size > 12 * 1024 * 1024) return toast('파일이 너무 커요. 4분 이내의 녹음을 선택해 주세요.', 4500);
   if (f.type && !/^audio\/|^video\/(mp4|webm|3gpp)/i.test(f.type)) return toast('오디오 파일을 선택해 주세요.');
   try { sp.rec && sp.rec.state === 'recording' && stopRec(); } catch (x) {}
   sp.blob = f; if (sp.url) URL.revokeObjectURL(sp.url);
@@ -794,42 +778,31 @@ function readBuf(blob) {
   return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsArrayBuffer(blob); });
 }
 
-async function submitTurn() {
+async function submitSpeaking() {
   const sp = G.sp; if (!sp || sp.busy || !sp.blob) return;
-  sp.busy = true; setDock('busy'); addTyping('녹음 파일을 올리는 중…');
-  const steps = ['녹음 파일을 올리는 중…', '음성을 글자로 바꾸는 중…', 'AI가 답변을 살펴보는 중…', '상대가 다음 말을 준비하는 중…']; let k = 0;
-  sp.stepTimer = setInterval(() => { k = Math.min(k + 1, steps.length - 1); const s = $('#stepTxt'); if (s) s.textContent = steps[k]; }, 2600);
+  sp.busy = true; setDock('busy');
+  const steps = ['녹음 파일을 준비하는 중…', '녹음을 서버로 보내는 중…', '음성을 글자로 바꾸는 중…', 'AI가 전체 대화를 평가하는 중…']; let k = 0;
+  setLoading(true, steps[0]);
+  const tm = setInterval(() => { k = Math.min(k + 1, steps.length - 1); $('#loadTxt').textContent = steps[k]; }, 3500);
   try {
     let payload;
     try { payload = await blobToWav(sp.blob); }
     catch (e) { payload = { blob: sp.blob, mime: (sp.blob.type || 'audio/webm').split(';')[0] }; }
     const b64 = await blobToB64(payload.blob);
-    const r = await api('api_speakingTurn', G.token, sp.session_id, G.unit.unit_id, sp.turn.turn_no, b64, payload.mime);
-    clearInterval(sp.stepTimer); removeTyping();
-    if (!r.ok) { toast(r.error, 4200); sp.busy = false; return setDock('ready'); }
-    addMe(r.result);
-    sp.results.push(Object.assign({ turn_no: sp.turn.turn_no, npc_line: sp.turn.npc_line }, r.result));
-    ssSet('hm_guest_results', sp.results);
-    sp.blob = null; sp.busy = false;
-    if (r.next) { sp.turn = r.next; sp.idx++; pgUpdate(); setTimeout(() => { if (G.sp === sp) { addNpc(r.next); setDock('idle'); } }, 700); }
-    else finishSpeaking();
-  } catch (e) {
-    clearInterval(sp.stepTimer); removeTyping(); sp.busy = false; toast(e.message, 4500); setDock('ready');
-  }
+    $('#loadTxt').textContent = steps[1];
+    const r = await api('api_speakingSubmit', G.token, G.unit.unit_id, G.cs, b64, payload.mime);
+    clearInterval(tm); setLoading(false);
+    if (!r.ok) { toast(r.error, 4500); sp.busy = false; return setDock('ready'); }
+    sp.phase = 'result'; sp.busy = false; viewSpResult(r);
+    if (G.token && G.user) { G.units = G.units.map(x => x.unit_id === G.unit.unit_id ? Object.assign({}, x, { progress: Object.assign({}, x.progress || {}, { speaking_done: true, last_speaking_score: r.overall }) }) : x); }
+  } catch (e) { clearInterval(tm); setLoading(false); sp.busy = false; toast(e.message, 4500); setDock('ready'); }
 }
-async function finishSpeaking() {
-  const sp = G.sp; sp.phase = 'finish'; setDock('busy'); addTyping('AI가 종합 분석을 하는 중…');
-  try {
-    const guestTurns = sp.results.map(r => ({ turn_no: r.turn_no, npc_line: r.npc_line, ref_answer: r.ref_answer, stt_text: r.stt_text, final_score: r.final_score, feedback: r.feedback }));
-    const sum = await api('api_finishSpeaking', G.token, sp.session_id, G.unit.unit_id, guestTurns);
-    sp.phase = 'result'; viewSpResult(sum, sp.results);
-  } catch (e) { removeTyping(); toast(e.message, 4500); sp.phase = 'chat'; sp.busy = false; setDock('idle'); }
-}
-function viewSpResult(sum, results) {
-  const o = sum.overall;
+function viewSpResult(sum) {
+  const o = sum.overall, results = sum.turns;
   $('#panel').innerHTML = `<div class="fade">
     <div class="card res-top">${gauge(o, '평균')}
       <div><div class="chip ind">AI 종합 분석</div><div class="lvl" style="margin:6px 0 4px;color:${scol(o)}">${lvl(o)}</div><p class="muted">${esc(sum.summary)}</p></div></div>
+    <div class="card" style="margin-top:14px"><b>🗣️ 전체 인식 결과</b><div class="tbox" style="margin-top:8px">${esc(sum.full_text)}</div><div class="small muted" style="margin-top:6px">대본과의 문자 유사도 ${sum.full_similarity}%</div></div>
     ${(sum.strengths && sum.strengths.length) || (sum.weak_points && sum.weak_points.length) ? `<div class="card" style="margin-top:14px">
       ${sum.strengths && sum.strengths.length ? `<b>👍 잘한 점</b><ul class="bul">${sum.strengths.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
       ${sum.weak_points && sum.weak_points.length ? `<b style="display:block;margin-top:12px">🎯 이렇게 보완해 보세요</b><ul class="bul">${sum.weak_points.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}</div>` : ''}
@@ -837,10 +810,10 @@ function viewSpResult(sum, results) {
     ${results.map(r => `<div class="card tcard">
       <div class="q"><span class="scorepill" style="background:${scol(r.final_score)}">${r.final_score}점</span>${r.turn_no}번째 · ${esc(r.npc_line)}</div>
       <div class="row">
-        <div class="tbox"><small>내가 말한 문장</small>${esc(r.stt_text)}</div>
-        <div class="tbox model"><small>모범답안</small>${esc(r.model_answer)}${r.ref_answer ? `<div class="small muted" style="margin-top:4px">교재 기준: ${esc(r.ref_answer)}</div>` : ''}</div>
+        <div class="tbox"><small>내가 말한 문장</small>${r.heard ? esc(r.heard) : '<span class="muted">인식된 말이 없어요</span>'}</div>
+        <div class="tbox model"><small>모범답안</small>${esc(r.model_answer)}${r.ref_answer && r.ref_answer !== r.model_answer ? `<div class="small muted" style="margin-top:4px">교재 대본: ${esc(r.ref_answer)}</div>` : ''}</div>
         ${r.keywords && r.keywords.length ? `<div class="kws">${r.keywords.map(k => `<span class="kw ${k.hit ? 'y' : 'n'}">${esc(k.k)}</span>`).join('')}</div>` : ''}
-        <div class="tbox fb"><small>교정 코멘트</small>${esc(r.feedback)}</div>
+        ${r.feedback ? `<div class="tbox fb"><small>교정 코멘트</small>${esc(r.feedback)}</div>` : ''}
       </div>
       <div class="subs"><span>문자 유사도 ${r.similarity}%</span><span>AI 평가 ${r.ai_score}점</span></div></div>`).join('')}
     ${G.user ? '' : `<div class="card" style="margin-top:14px;background:var(--gold-soft)"><b>게스트 모드예요</b><p class="small muted" style="margin:4px 0 10px">이 결과는 저장되지 않아요. 로그인하면 점수와 취약 단원이 계정에 쌓여요.</p><button class="btn btn-primary btn-sm" data-act="login">로그인하고 기록하기</button></div>`}
@@ -859,7 +832,6 @@ function animateGauges() { requestAnimationFrame(() => requestAnimationFrame(() 
 function panelAssessment() {
   const qs = G.unit.questions, el = $('#panel');
   if (!qs.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 자기평가 문항이 아직 없어요.', '평')}</div>`; return; }
-  getSession('assessment');
   const ind = qs.filter(q => q.type === 'indirect'), dir = qs.filter(q => q.type !== 'indirect');
   let n = 0;
   const qh = (q) => {
@@ -894,8 +866,7 @@ async function submitAssessment() {
   if (firstMiss) { firstMiss.scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('아직 답하지 않은 문항이 있어요.'); return; }
   setLoading(true, '채점하는 중…');
   try {
-    const sid = await getSession('assessment'); delete G.sessions[G.unit.unit_id + '|assessment'];
-    const r = await api('api_submitAssessment', G.token, sid, G.unit.unit_id, answers);
+    const r = await api('api_submitAssessment', G.token, G.cs, G.unit.unit_id, answers);
     setLoading(false); viewAsResult(r);
   } catch (e) { setLoading(false); toast(e.message, 4000); }
 }
@@ -982,7 +953,7 @@ function openAuth(mode = 'login') {
   });
 }
 function afterAuth(r) {
-  G.token = r.token; G.user = r.user; lsSet('hm_token', r.token); G.sessions = {};
+  G.token = r.token; G.user = r.user; lsSet('hm_token', r.token);
   closeModal(); toast(`${r.user.name}님, 환영해요! 이제 학습 기록이 저장돼요.`);
   refreshAfterAuth();
 }
@@ -993,7 +964,7 @@ async function refreshAfterAuth() {
   renderTopbar();
 }
 function logout() {
-  cleanup(); G.token = null; G.user = null; lsSet('hm_token', null); G.sessions = {}; ssSet('hm_guest_results', []);
+  cleanup(); G.token = null; G.user = null; lsSet('hm_token', null); ssSet('hm_guest_results', []);
   toast('로그아웃했어요.'); api('api_getUnits', null).then(r => { G.units = r.units; goHome(); }).catch(goHome);
 }
 /* Google 로그인 (선택: GOOGLE_CLIENT_ID 설정 시) */
@@ -1024,11 +995,11 @@ const ACT = {
   home: () => goHome(),
   units: () => viewUnits(),
   guestStart: () => viewUnits(),
-  login: () => { if (G.sp && G.sp.phase === 'chat') return toast('대화가 끝난 뒤에 로그인할 수 있어요.'); openAuth('login'); },
+  login: () => { if (spBusy()) return toast('녹음을 제출한 뒤에 로그인할 수 있어요.'); openAuth('login'); },
   authTab: t => openAuth(t.dataset.m),
   logout: () => logout(),
   google: () => googleLogin(),
-  mypage: async () => { if (G.sp && G.sp.phase === 'chat' && !(await askConfirm('진행 중인 대화가 종료돼요. 이동할까요?', '이동'))) return; viewMyPage(); },
+  mypage: async () => { if (spBusy() && !(await askConfirm('녹음한 내용이 사라져요. 이동할까요?', '이동'))) return; viewMyPage(); },
   pickUnit: t => openUnit(t.dataset.id, t.dataset.course),
   tab: t => switchTab(t.dataset.tab),
   closeModal: () => closeModal(),
@@ -1045,10 +1016,8 @@ const ACT = {
   toggleTr: () => { const b = $('#trBox'); b.hidden = !b.hidden; $('#trBtn').textContent = b.hidden ? '📄 대본 보기' : '📄 대본 숨기기'; },
   markListen: () => markListening(false),
   /* 말하기 */
-  startSp: () => startSpeaking(),
-  rec: () => startRec(), stop: () => stopRec(), rerec: () => reRec(), submit: () => submitTurn(),
+  rec: () => startRec(), stop: () => stopRec(), rerec: () => reRec(), submit: () => submitSpeaking(),
   tts: t => speak(t.dataset.text),
-  quitSp: async () => { if (await askConfirm('대화를 종료하고 처음으로 돌아갈까요? 지금까지의 대화는 저장되지 않아요.', '종료')) viewUnit('speaking'); },
   retrySp: () => viewUnit('speaking'),
   /* 자기평가 */
   submitAs: () => submitAssessment(),
@@ -1066,20 +1035,43 @@ function goHome() { cleanup(); if (G.user && G.user.role === 'admin' && typeof w
 
 /* ───────── 시작 ───────── */
 (async function init() {
-  setLoading(true, '한말을 준비하고 있어요…');
   G.token = lsGet('hm_token'); applySettings();
-  try {
-    const r = await api('api_init', G.token, BOOT.unit || '');
+  let cache = null; try { cache = JSON.parse(lsGet('hm_init') || 'null'); } catch (e) {}
+  const hot = !!(cache && cache.token === (G.token || '') && Array.isArray(cache.units) && (!BOOT.unit || (cache.unitData && cache.unitData[BOOT.unit])));
+  const apply = r => {
     G.user = r.user; G.units = r.units; G.googleClientId = r.googleClientId || '';
     if (r.settings) { G.settings = r.settings; applySettings(); lsSet('hm_settings', JSON.stringify(r.settings)); }
     if (G.token && !r.user) { lsSet('hm_token', null); G.token = null; }
-    setLoading(false);
+  };
+  const route = r => {
     if (BOOT.unit) {
-      if (r.unit) { G.entered = true; G.unit = r.unit; viewUnit(BOOT.course || 'listening'); }
+      if (r.unit) { G.entered = true; G.unit = r.unit; G.uc[r.unit.unit_id] = r.unit; viewUnit(BOOT.course || 'listening'); }
       else { toast('QR에 해당하는 단원을 찾을 수 없어요. 단원을 직접 골라 주세요.', 4000); viewUnits(false); }
     } else if (G.user && G.user.role === 'admin') openAdmin('overview');
     else if (G.user) viewUnits(false);
     else viewStart();
+  };
+  const save = r => {
+    const ud = (cache && cache.unitData) || {}; if (r.unit) ud[r.unit.unit_id] = r.unit;
+    lsSet('hm_init', JSON.stringify({ token: G.token || '', user: r.user, units: r.units, settings: r.settings, googleClientId: r.googleClientId, unitData: ud }));
+  };
+  const req = api('api_init', G.token, BOOT.unit || '');
+  if (hot) {   // 저장된 화면을 먼저 보여 주고, 뒤에서 최신 정보로 갱신
+    const r0 = { user: cache.user, units: cache.units, settings: cache.settings, googleClientId: cache.googleClientId, unit: BOOT.unit ? cache.unitData[BOOT.unit] : null };
+    apply(r0); route(r0);
+    req.then(r => {
+      const was = G.user && G.user.role, wasId = G.user && G.user.user_id;
+      apply(r); save(r); renderTopbar();
+      if (r.unit) G.uc[r.unit.unit_id] = r.unit;
+      if (r.unit && G.unit && G.unit.unit_id === r.unit.unit_id && !spBusy()) G.unit = r.unit;
+      if ($('#ugrid')) viewUnits(false);
+      if ((G.user && G.user.user_id) !== wasId || (G.user && G.user.role) !== was) { if (G.user && G.user.role === 'admin' && !BOOT.unit) openAdmin('overview'); else if (!G.user && !BOOT.unit) viewStart(); }
+    }).catch(() => {});
+    return;
+  }
+  setLoading(true, '한말을 준비하고 있어요…');
+  try {
+    const r = await req; apply(r); save(r); setLoading(false); route(r);
   } catch (e) {
     setLoading(false); renderTopbar();
     $('#main').innerHTML = `<div class="card">${emptyBox('앱을 불러오지 못했어요: ' + e.message, '!')}<div style="text-align:center"><button class="btn btn-primary" onclick="location.reload()">다시 시도</button></div></div>`;
@@ -1090,7 +1082,7 @@ function goHome() { cleanup(); if (G.user && G.user.role === 'admin' && typeof w
 (function () {
 
 /* ═════════ 관리자 모드 ═════════ */
-const A = { tab: 'overview', ov: null, units: null, sub: 'basic', unit: null, isNew: false, char: {}, dlg: [], qs: [], dirty: {}, q: '', sort: 'recent', defaults: null, fonts: [], setSaved: null, setDirty: false, audio: null };
+const A = { chars: null, tab: 'overview', ov: null, units: null, sub: 'basic', unit: null, isNew: false, char: {}, dlg: [], qs: [], dirty: {}, q: '', sort: 'recent', defaults: null, fonts: [], setSaved: null, setDirty: false, audio: null };
 const isAdmin = () => !!(G.user && G.user.role === 'admin');
 const adDate = s => String(s || '').slice(0, 16) || '-';
 const adVal = v => (v === null || v === undefined || v === '') ? '-' : v;
@@ -1109,13 +1101,13 @@ function viewAdmin(tab) {
   if (!isAdmin()) return viewUnits();
   cleanup(); G.unit = null; renderTopbar();
   if (tab) A.tab = tab;
-  const T = [['overview', '📊', '현황'], ['units', '📚', '단원 관리'], ['design', '🎨', '디자인']];
+  const T = [['overview', '📊', '현황'], ['units', '📚', '단원 관리'], ['chars', '🧑‍🏫', '등장인물'], ['design', '🎨', '디자인']];
   $('#main').innerHTML = `<section class="fade adm">
     <div class="uhead"><div><div class="crumb">ADMIN</div><h2 class="sec-title">관리자 모드</h2></div>
     <button class="btn btn-ghost btn-sm" data-act="units">학습자 화면 보기 →</button></div>
     <div class="seg" role="tablist">${T.map(t => `<button role="tab" class="${A.tab === t[0] ? 'on' : ''}" data-act="adTab" data-tab="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}</div>
     <div id="adBody"></div></section>`;
-  ({ overview: adOverview, units: adUnits, design: adDesign })[A.tab]();
+  ({ overview: adOverview, units: adUnits, chars: adChars, design: adDesign })[A.tab]();
 }
 
 /* ───────── 1) 현황: 단원별 평균 + 전체 학습자 ───────── */
@@ -1217,8 +1209,6 @@ function adLoadEditor(d, isNew) {
   A.unit = d.unit; A.isNew = isNew; A.dirty = {}; A.sub = 'basic';
   A.dlg = d.dialogues.map(x => Object.assign({}, x));
   A.qs = d.questions.map(x => Object.assign({}, x));
-  const f = A.dlg[0] || {};
-  A.char = { character_name: f.character_name || '', character_title: f.character_title || '', character_img_url: f.character_img_url || '' };
   viewAdmin('units');
 }
 function adEditor() {
@@ -1270,54 +1260,84 @@ async function adDelUnit() {
   catch (e) { setLoading(false); toast(e.message, 4000); }
 }
 
-/* 2-2) 말하기: 상대 대화자 + 대화 */
-function adAvatarHtml() { return avatarHtml({ character_name: A.char.character_name, character_img_url: adImg(A.char.character_img_url) }, true); }
+/* 2-2) 말하기: 등장인물(사전 설정)을 골라 대본 구성 */
+const adChOpt = (sel) => '<option value="">— 등장인물 선택 —</option>' + (A.chars || []).map(x => `<option value="${esc(x.character_id)}" ${x.character_id === sel ? 'selected' : ''}>${esc(x.name)}${x.title ? ' · ' + esc(x.title) : ''}</option>`).join('');
+const adChById = id => (A.chars || []).find(x => x.character_id === id);
 function adTurnHtml(d, i) {
-  const n = A.dlg.length, at = f => `data-ad="dlg" data-i="${i}" data-f="${f}"`;
+  const n = A.dlg.length, at = f => `data-ad="dlg" data-i="${i}" data-f="${f}"`, ch = adChById(d.character_id);
   return `<div class="card adcard"><div class="adhead"><b class="serif">대화 ${i + 1}</b><span class="adbtns">
       <button class="iconbtn" data-act="adTurnUp" data-i="${i}" aria-label="위로" ${i === 0 ? 'disabled' : ''}>↑</button>
       <button class="iconbtn" data-act="adTurnDown" data-i="${i}" aria-label="아래로" ${i === n - 1 ? 'disabled' : ''}>↓</button>
       <button class="iconbtn danger" data-act="adTurnDel" data-i="${i}" aria-label="삭제">✕</button></span></div>
+    <div class="fld"><label>상대 등장인물</label><div class="chpick"><span data-av="${i}" style="flex:none">${avatarHtml(ch ? { character_name: ch.name, character_img_url: adImg(ch.img_url) } : { character_name: d.character_name, character_img_url: adImg(d.character_img_url) })}</span>
+      <select class="txt" ${at('character_id')}>${adChOpt(d.character_id)}</select></div>
+      ${!d.character_id && d.character_name ? `<p class="small muted" style="margin-top:4px">예전 설정: ${esc(d.character_name)}${d.character_title ? ' · ' + esc(d.character_title) : ''} — 목록에서 등장인물을 골라 주세요.</p>` : ''}</div>
     <div class="fld"><label>상대 대사 (TTS로 읽어 줘요)</label><textarea class="txt" rows="2" ${at('npc_line')}>${esc(d.npc_line)}</textarea></div>
-    <div class="fld"><label>기준 정답</label><textarea class="txt" rows="2" ${at('ref_answer')}>${esc(d.ref_answer)}</textarea></div>
-    <div class="g2"><div class="fld"><label>핵심 키워드 (쉼표로 구분)</label><input class="txt" ${at('keywords')} value="${esc(d.keywords)}" placeholder="예: 미국,왔어요"></div>
-    <div class="fld"><label>분기 규칙 (선택)</label><input class="txt" ${at('next_rule')} value="${esc(d.next_rule)}" placeholder="예: 네,좋아요=>4; default=>3"></div></div>
-    <details><summary>이 대화만 상대 다르게 설정</summary><div class="g2">
-      <div class="fld"><label>이름</label><input class="txt" ${at('character_name')} value="${esc(d.character_name)}" maxlength="40"></div>
-      <div class="fld"><label>직책·소개</label><input class="txt" ${at('character_title')} value="${esc(d.character_title)}" maxlength="40"></div></div>
-      <div class="fld"><label>아바타 주소</label><input class="txt" ${at('character_img_url')} value="${esc(d.character_img_url)}" placeholder="https://…"></div></details></div>`;
+    <div class="fld"><label>학습자가 말할 대본 (기준 정답)</label><textarea class="txt" rows="2" ${at('ref_answer')}>${esc(d.ref_answer)}</textarea></div>
+    <div class="fld"><label>핵심 키워드 (쉼표로 구분, 선택)</label><input class="txt" ${at('keywords')} value="${esc(d.keywords)}" placeholder="예: 미국,왔어요"></div></div>`;
 }
-function adSubSpeaking() {
+async function adSubSpeaking() {
   if (A.isNew) return adNeedSave();
-  const c = A.char, at = f => `data-ad="char" data-f="${f}"`;
-  $('#adSub').innerHTML = `<div class="card"><b>🧑‍🏫 상대 대화자 설정</b><p class="small muted" style="margin-top:2px">여기서 바꾸면 따로 설정하지 않은 모든 대화에 함께 적용돼요.</p>
-    <div class="adchar"><div id="chAvatar" style="flex:none">${adAvatarHtml()}</div><div class="grow">
-      <div class="g2"><div class="fld"><label>이름</label><input class="txt" ${at('character_name')} value="${esc(c.character_name)}" maxlength="40" placeholder="예: 민지"></div>
-      <div class="fld"><label>직책·소개</label><input class="txt" ${at('character_title')} value="${esc(c.character_title)}" maxlength="40" placeholder="예: 같은 반 친구, 면접관"></div></div>
-      <div class="adrow"><label class="btn btn-ghost btn-sm">🖼️ 아바타 올리기<input type="file" hidden accept="image/*" data-ad="file" data-kind="image"></label><button class="btn btn-ghost btn-sm" data-act="adClearChar">아바타 제거</button></div>
-      <div class="fld" style="margin-top:10px"><label>아바타 주소 (선택)</label><input class="txt" ${at('character_img_url')} value="${esc(c.character_img_url)}" placeholder="https://…"></div></div></div></div>
+  if (!A.chars) {
+    $('#adSub').innerHTML = emptyBox('등장인물을 불러오는 중…', '…');
+    try { A.chars = await api('api_admin_listCharacters', G.token); } catch (e) { $('#adSub').innerHTML = emptyBox(e.message, '!'); return; }
+  }
+  $('#adSub').innerHTML = `<div class="card"><b>🗣️ 말하기 대본</b>
+    <p class="small muted" style="margin-top:2px">학습자는 아래 대본을 처음부터 끝까지 <b>한 번에 녹음</b>해 제출해요. 대화마다 미리 등록한 등장인물을 고르세요. 등장인물은 <b>등장인물</b> 탭에서 추가·수정해요.</p>
+    ${A.chars.length ? `<div class="fld" style="margin-top:10px"><label>모든 대화에 같은 인물 적용</label><select class="txt" data-ad="allchar">${adChOpt('')}</select></div>` : `<p class="small" style="margin-top:8px;color:var(--dan)">등록된 등장인물이 없어요. 먼저 <b>등장인물</b> 탭에서 추가해 주세요.</p>`}</div>
     <div id="adTurns">${A.dlg.map(adTurnHtml).join('')}</div>
     <button class="btn btn-ghost btn-block" style="margin-top:12px" data-act="adAddTurn">＋ 대화 추가</button>
-    <p class="small muted" style="margin:12px 2px">대화 번호는 위에서부터 1, 2, 3… 이에요. 분기 규칙은 <b>대답에 포함된 말=>이동할 대화 번호</b> 형식이고, 대화를 끝내려면 <b>end</b>를 쓰세요. (예: <code>네,좋아요=>4; default=>3</code>)</p>
-    <button class="btn btn-primary btn-block" data-act="adSaveDlg">말하기 내용 저장</button>`;
+    <button class="btn btn-primary btn-block" style="margin-top:14px" data-act="adSaveDlg">말하기 내용 저장</button>`;
 }
-function adSetChar(f, v) {
-  const old = A.char[f] || '';
-  A.dlg.forEach((d, i) => {
-    if ((d[f] || '') === old) { d[f] = v; const el = document.querySelector(`[data-ad="dlg"][data-i="${i}"][data-f="${f}"]`); if (el) el.value = v; }
-  });
-  A.char[f] = v; A.dirty.dlg = 1;
-  const av = $('#chAvatar'); if (av) av.innerHTML = adAvatarHtml();
-  const inp = document.querySelector(`[data-ad="char"][data-f="${f}"]`); if (inp && inp.value !== v) inp.value = v;
+function adPickChar(i, id) {
+  const d = A.dlg[i], ch = adChById(id);
+  d.character_id = id;
+  if (ch) { d.character_name = ch.name; d.character_title = ch.title; d.character_img_url = ch.img_url; }
+  A.dirty.dlg = 1;
+  const av = document.querySelector(`[data-av="${i}"]`); if (av) av.innerHTML = avatarHtml({ character_name: d.character_name, character_img_url: adImg(d.character_img_url) });
 }
 async function adSaveDlg() {
   if (!A.dlg.length) return toast('대화를 1개 이상 추가해 주세요.');
+  const miss = A.dlg.findIndex(d => !d.character_id); if (miss >= 0) return toast(`${miss + 1}번째 대화의 등장인물을 골라 주세요.`);
   setLoading(true, '저장하는 중…');
   try {
-    const rows = A.dlg.map(d => ({ character_name: d.character_name, character_title: d.character_title, character_img_url: d.character_img_url, npc_line: d.npc_line, ref_answer: d.ref_answer, keywords: d.keywords, next_rule: d.next_rule }));
+    const rows = A.dlg.map(d => ({ character_id: d.character_id, npc_line: d.npc_line, ref_answer: d.ref_answer, keywords: d.keywords }));
     const r = await api('api_admin_saveDialogues', G.token, A.unit.unit_id, rows);
     A.dirty.dlg = 0; setLoading(false); toast(`대화 ${r.saved}개를 저장했어요.`);
   } catch (e) { setLoading(false); toast(e.message, 5000); }
+}
+
+/* 등장인물 라이브러리 */
+async function adChars() {
+  const b = $('#adBody'); b.innerHTML = emptyBox('불러오는 중…', '…');
+  try { A.chars = await api('api_admin_listCharacters', G.token); } catch (e) { b.innerHTML = emptyBox(e.message, '!'); return; }
+  adDrawChars();
+}
+function adDrawChars() {
+  const at = (i, f) => `data-ad="chr" data-i="${i}" data-f="${f}"`;
+  $('#adBody').innerHTML = `<p class="small muted" style="margin:0 2px 10px">말하기 대화에서 고를 등장인물(아바타)을 미리 등록해 두세요. 이미지는 정사각형으로 자동 정리돼요.</p>
+    ${(A.chars || []).map((x, i) => `<div class="card adcard"><div class="chrow">
+      <div style="flex:none;text-align:center">${avatarHtml({ character_name: x.name, character_img_url: adImg(x.img_url) }, true)}
+        <label class="btn btn-ghost btn-sm" style="margin-top:8px">🖼️ 이미지<input type="file" hidden accept="image/*" data-ad="file" data-kind="avatar" data-i="${i}"></label></div>
+      <div class="grow" style="min-width:200px"><div class="g2"><div class="fld"><label>이름</label><input class="txt" ${at(i, 'name')} value="${esc(x.name)}" maxlength="40" placeholder="예: 민지"></div>
+        <div class="fld"><label>직책·소개</label><input class="txt" ${at(i, 'title')} value="${esc(x.title)}" maxlength="40" placeholder="예: 같은 반 친구"></div></div>
+        <div class="fld"><label>이미지 주소 (선택)</label><input class="txt" ${at(i, 'img_url')} value="${esc(x.img_url)}" placeholder="https://…"></div>
+        <div class="adrow"><button class="btn btn-primary btn-sm" data-act="adChSave" data-i="${i}">저장</button><button class="btn btn-ghost btn-sm danger" data-act="adChDel" data-i="${i}">삭제</button></div></div></div></div>`).join('') || '<div class="card">' + emptyBox('등록된 등장인물이 없어요.', '인') + '</div>'}
+    <button class="btn btn-ghost btn-block" style="margin-top:12px" data-act="adChAdd">＋ 등장인물 추가</button>`;
+}
+async function adChSave(i) {
+  const x = A.chars[i]; if (!String(x.name || '').trim()) return toast('이름을 입력해 주세요.');
+  setLoading(true, '저장하는 중…');
+  try { const r = await api('api_admin_saveCharacter', G.token, x); x.character_id = r.character_id; setLoading(false); toast('저장했어요.'); adDrawChars(); }
+  catch (e) { setLoading(false); toast(e.message, 5000); }
+}
+async function adChDel(i) {
+  const x = A.chars[i];
+  if (!x.character_id) { A.chars.splice(i, 1); return adDrawChars(); }
+  if (!(await askConfirm(`"${x.name}" 등장인물을 삭제할까요?`, '삭제'))) return;
+  setLoading(true, '삭제하는 중…');
+  try { await api('api_admin_deleteCharacter', G.token, x.character_id); A.chars.splice(i, 1); setLoading(false); toast('삭제했어요.'); adDrawChars(); }
+  catch (e) { setLoading(false); toast(e.message, 5000); }
 }
 
 /* 2-3) 자기평가 */
@@ -1349,15 +1369,18 @@ async function adSaveQs() {
 }
 
 /* ───────── 파일 업로드 ───────── */
-function adResize(file, max) {
+function adResize(file, max, square, png) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const k = Math.min(1, max / Math.max(img.width, img.height)), w = Math.round(img.width * k), h = Math.round(img.height * k);
+      let sx = 0, sy = 0, sw = img.width, sh = img.height, w, h;
+      if (square) { const m = Math.min(sw, sh); sx = (sw - m) / 2; sy = (sh - m) / 2; sw = sh = m; w = h = Math.min(max, m); }
+      else { const k = Math.min(1, max / Math.max(sw, sh)); w = Math.round(sw * k); h = Math.round(sh * k); }
       const c = document.createElement('canvas'); c.width = w; c.height = h;
-      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
-      c.toBlob(b => b ? res({ blob: b, mime: 'image/jpeg' }) : rej(new Error('이미지를 변환하지 못했어요.')), 'image/jpeg', .86);
+      const x = c.getContext('2d'); if (!png) { x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); }
+      x.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+      c.toBlob(b => b ? res({ blob: b, mime: png ? 'image/png' : 'image/jpeg' }) : rej(new Error('이미지를 변환하지 못했어요.')), png ? 'image/png' : 'image/jpeg', .88);
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('이미지를 읽을 수 없어요.')); };
     img.src = url;
@@ -1367,17 +1390,20 @@ async function adUploadFile(input) {
   const f = input.files && input.files[0]; input.value = ''; if (!f) return;
   const kind = input.dataset.kind;
   if (kind === 'audio' && f.size > 11 * 1024 * 1024) return toast('음원이 너무 커요(11MB 이하). Drive에 올린 뒤 공유 링크를 붙여 넣어 주세요.', 5500);
-  if (kind === 'image' && !/^image\//.test(f.type)) return toast('이미지 파일을 선택해 주세요.');
+  if (kind !== 'audio' && !/^image\//.test(f.type)) return toast('이미지 파일을 선택해 주세요.');
+  if (kind !== 'audio' && f.size > 5 * 1024 * 1024) return toast('이미지가 너무 커요. 5MB 이하 파일을 선택해 주세요.', 4500);
   setLoading(true, '파일을 올리는 중… (큰 파일은 1분 정도 걸려요)');
   try {
     let blob = f, mime = f.type || '';
-    if (kind === 'image') { const r = await adResize(f, 480); blob = r.blob; mime = r.mime; }
+    if (kind === 'avatar') { const r = await adResize(f, 400, true, false); blob = r.blob; mime = r.mime; }
+    else if (kind === 'logo') { const r = await adResize(f, 256, true, true); blob = r.blob; mime = r.mime; }
     const b64 = await blobToB64(blob);
-    const r = await api('api_admin_uploadFile', G.token, kind, A.unit.unit_id, f.name, mime, b64);
+    const r = await api('api_admin_uploadFile', G.token, kind === 'audio' ? 'audio' : 'image', kind === 'audio' ? (A.unit && A.unit.unit_id) : kind, f.name, mime, b64);
     setLoading(false);
     if (kind === 'audio') { A.unit.audio_url = r.url; A.dirty.unit = 1; adSubBasic(); }
-    else adSetChar('character_img_url', r.url);
-    toast(r.shared ? '업로드했어요. 아래 저장 버튼을 눌러 반영하세요.' : '업로드는 됐지만 공유 설정에 실패했어요. Drive에서 "링크가 있는 모든 사용자"로 바꿔 주세요.', 6000);
+    else if (kind === 'avatar') { A.chars[+input.dataset.i].img_url = r.url; adDrawChars(); }
+    else { G.settings.logo_url = r.url; A.setDirty = true; applySettings(); adDrawDesign(); }
+    toast(r.shared ? (kind === 'avatar' ? '업로드했어요. 이 카드의 저장 버튼을 눌러 반영하세요.' : '업로드했어요. 아래 저장 버튼을 눌러 반영하세요.') : '업로드는 됐지만 공유 설정에 실패했어요. Drive에서 "링크가 있는 모든 사용자"로 바꿔 주세요.', 6000);
   } catch (e) { setLoading(false); toast(e.message, 5000); }
 }
 
@@ -1395,8 +1421,12 @@ function adDrawDesign() {
   const opts = k => A.fonts.map(f => `<option value="${esc(f)}" ${s[k] === f ? 'selected' : ''}>${esc(f)}</option>`).join('');
   $('#adBody').innerHTML = `<div class="card"><b>🎨 사이트 디자인</b>
     <p class="small muted" style="margin:2px 0 12px">바꾸면 이 화면에 바로 미리 적용돼요. <b>저장</b>을 눌러야 모든 학습자에게 반영돼요.</p>
-    <div class="g2"><div class="fld"><label>사이트 이름</label><input class="txt" ${at('site_name')} value="${esc(s.site_name)}" maxlength="30"></div>
-    <div class="fld"><label>로고 글자 (1~2자)</label><input class="txt" ${at('brand_mark')} value="${esc(s.brand_mark)}" maxlength="2"></div></div>
+    <div class="fld"><label>사이트 이름 <span class="small muted">(최대 20자 · 모바일에서도 2줄 안에 표시돼요)</span></label><input class="txt" ${at('site_name')} value="${esc(s.site_name)}" maxlength="20"></div>
+    <div class="fld"><label>로고</label><div class="chrow" style="align-items:center">
+      <div class="brand" style="pointer-events:none;flex:none"><i class="${imgUrl(s.logo_url) ? 'logo' : ''}">${imgUrl(s.logo_url) ? `<img src="${esc(imgUrl(s.logo_url))}" alt="">` : esc(s.brand_mark)}</i></div>
+      <div class="grow" style="min-width:180px"><div class="fld" style="margin:0"><label>로고 글자 (1~2자)</label><input class="txt" ${at('brand_mark')} value="${esc(s.brand_mark)}" maxlength="2"></div></div></div>
+      <div class="adrow" style="margin-top:8px"><label class="btn btn-ghost btn-sm">🖼️ 로고 이미지 올리기<input type="file" hidden accept="image/png,image/jpeg,image/webp,image/gif" data-ad="file" data-kind="logo"></label>${s.logo_url ? '<button class="btn btn-ghost btn-sm" data-act="adClearLogo">이미지 제거 (글자 로고 사용)</button>' : ''}</div>
+      <p class="small muted" style="margin-top:4px">정사각형(1:1)으로 쓰여요. <b>512×512px 이상 권장</b>, PNG·JPG·WebP, 5MB 이하. 직사각형이면 가운데를 정사각형으로 잘라 256×256px로 줄여 저장해요. 이미지가 있으면 글자 대신 표시돼요.</p></div>
     <div class="fld"><label>시작 화면 작은 문구</label><input class="txt" ${at('tag_text')} value="${esc(s.tag_text)}" maxlength="40"></div>
     <div class="fld"><label>시작 화면 제목 (줄바꿈 가능)</label><textarea class="txt" rows="2" ${at('hero_title')} maxlength="80">${esc(s.hero_title)}</textarea></div>
     <div class="fld"><label>시작 화면 설명</label><textarea class="txt" rows="3" ${at('hero_desc')} maxlength="200">${esc(s.hero_desc)}</textarea></div>
@@ -1426,8 +1456,8 @@ document.addEventListener('input', e => {
   if (k === 'q') { A.q = v; const tb = $('#lrnBody'); if (tb) tb.innerHTML = adLearnerRows(); }
   else if (k === 'sort') { A.sort = v; const tb = $('#lrnBody'); if (tb) tb.innerHTML = adLearnerRows(); }
   else if (k === 'unit') { A.unit[f] = v; A.dirty.unit = 1; }
-  else if (k === 'char') adSetChar(f, v);
-  else if (k === 'dlg') { A.dlg[i][f] = v; A.dirty.dlg = 1; }
+  else if (k === 'dlg') { if (f !== 'character_id') { A.dlg[i][f] = v; A.dirty.dlg = 1; } }
+  else if (k === 'chr') { A.chars[i][f] = v; }
   else if (k === 'qs') { A.qs[i][f] = v; A.dirty.qs = 1; }
   else if (k === 'set') {
     G.settings[f] = v; A.setDirty = true; applySettings();
@@ -1437,6 +1467,8 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const t = e.target, k = t.dataset && t.dataset.ad; if (!k) return;
   if (k === 'file') adUploadFile(t);
+  else if (k === 'dlg' && t.dataset.f === 'character_id') adPickChar(+t.dataset.i, t.value);
+  else if (k === 'allchar') { if (t.value) { A.dlg.forEach((_, i) => adPickChar(i, t.value)); adSubSpeaking(); } }
   else if (k === 'qs' && t.dataset.f === 'type') adSubAssess();
 });
 
@@ -1459,16 +1491,19 @@ Object.assign(ACT, {
   adSaveUnit: () => adSaveUnit(),
   adDelUnit: () => adDelUnit(),
   adClearAudio: () => { A.unit.audio_url = ''; A.dirty.unit = 1; adSubBasic(); },
-  adClearChar: () => adSetChar('character_img_url', ''),
+  adChAdd: () => { A.chars.push({ character_id: '', name: '', title: '', img_url: '' }); adDrawChars(); },
+  adChSave: t => adChSave(+t.dataset.i),
+  adChDel: t => adChDel(+t.dataset.i),
+  adClearLogo: () => { G.settings.logo_url = ''; A.setDirty = true; applySettings(); adDrawDesign(); },
   adAddTurn: () => {
-    A.dlg.push(Object.assign({}, A.char, { npc_line: '', ref_answer: '', keywords: '', next_rule: '' })); A.dirty.dlg = 1; adSubSpeaking();
+    const pv = A.dlg[A.dlg.length - 1] || {}; A.dlg.push({ character_id: pv.character_id || '', character_name: pv.character_name || '', character_title: pv.character_title || '', character_img_url: pv.character_img_url || '', npc_line: '', ref_answer: '', keywords: '' }); A.dirty.dlg = 1; adSubSpeaking();
     const l = $('#adTurns').lastElementChild; if (l) l.scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
   adTurnUp: t => { const i = +t.dataset.i; if (i > 0) { [A.dlg[i - 1], A.dlg[i]] = [A.dlg[i], A.dlg[i - 1]]; A.dirty.dlg = 1; adSubSpeaking(); } },
   adTurnDown: t => { const i = +t.dataset.i; if (i < A.dlg.length - 1) { [A.dlg[i + 1], A.dlg[i]] = [A.dlg[i], A.dlg[i + 1]]; A.dirty.dlg = 1; adSubSpeaking(); } },
   adTurnDel: async t => {
     if (A.dlg.length <= 1) return toast('대화는 최소 1개가 필요해요.');
-    if (!(await askConfirm('이 대화를 삭제할까요? (분기 규칙의 번호도 확인해 주세요)', '삭제'))) return;
+    if (!(await askConfirm('이 대화를 삭제할까요?', '삭제'))) return;
     A.dlg.splice(+t.dataset.i, 1); A.dirty.dlg = 1; adSubSpeaking();
   },
   adSaveDlg: () => adSaveDlg(),
