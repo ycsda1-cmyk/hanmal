@@ -118,6 +118,8 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .pill.on{background:var(--indigo);color:#fff;border-color:var(--indigo)}
 .pill.ab{border-color:var(--gold);color:#8A6717}
 .pill.ab.on{background:var(--gold);color:#fff}
+.setcard{display:grid;gap:4px;width:100%;text-align:left;margin-bottom:10px;cursor:pointer;border:1px solid var(--line)}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .tr{display:grid;gap:10px;margin-top:6px}
 .tr .ln{padding:12px 14px;background:var(--paper);border-radius:14px;border-left:4px solid var(--indigo)}
 .tr .sp{display:inline-block;font-weight:800;color:var(--indigo);margin-right:8px}
@@ -289,6 +291,8 @@ ul.bul{margin:6px 0 0;padding-left:20px} ul.bul li{margin:4px 0}
 .notice .nrow{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:430px){.tb-right .badge.me{display:none}.tb-right .btn-sm{padding:6px 10px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* 모바일 상단 버튼: 글자 대신 아이콘 (다른 규칙보다 뒤에 둬야 적용돼요) */
+@media(max-width:560px){.tb-right .lbl{display:none!important}.tb-right .ico{display:inline-block!important}.tb-right .btn-ghost.btn-sm{padding:0;width:40px;height:40px;display:grid;place-items:center}}
 
 /* ── 관리자 화면 ── */
 .adm .txt{margin-top:0}
@@ -352,7 +356,8 @@ ul.bul{margin:6px 0 0;padding-left:20px} ul.bul li{margin:4px 0}
 const _q = new URLSearchParams(location.search);
 const BOOT = {
   unit: String(_q.get('unit') || '').trim().slice(0, 40),
-  course: ['listening', 'speaking', 'assessment'].includes(String(_q.get('course') || '').toLowerCase()) ? String(_q.get('course')).toLowerCase() : '',
+  n: Math.max(0, parseInt(_q.get('n'), 10) || 0),
+  course: ['intro', 'listening', 'speaking', 'assessment'].includes(String(_q.get('course') || '').toLowerCase()) ? String(_q.get('course')).toLowerCase() : '',
   appUrl: location.origin + location.pathname.replace(/index\.html$/, ''),
   maxTurnSec: 60,
   settings: (() => { try { return JSON.parse(localStorage.getItem('hm_settings') || 'null') || {}; } catch (e) { return {}; } })()
@@ -467,9 +472,14 @@ const UA = navigator.userAgent || '';
 function isEmbedded() { try { return window.self !== window.top; } catch (e) { return true; } }
 function policyBlocked() { try { const p = document.permissionsPolicy || document.featurePolicy; return !!(p && p.allowsFeature && !p.allowsFeature('microphone')); } catch (e) { return false; } }
 function inAppBrowser() { return /KAKAOTALK|NAVER\(inapp|Line\/|Instagram|FBAN|FBAV|DaumApps|; wv\)/i.test(UA); }
+function initIdx(course, len) {   // QR의 n 값(몇 번째 음원/말하기)으로 처음 선택을 정함
+  if (len === 1) return 0;
+  if (BOOT.n && BOOT.course === course && !G.nUsed) { G.nUsed = true; const k = BOOT.n - 1; if (k >= 0 && k < len) return k; }
+  return undefined;
+}
 function newTabUrl() {
   const base = BOOT.appUrl || ''; if (!base) return '';
-  if (G.unit) return base + '?unit=' + encodeURIComponent(G.unit.unit_id) + '&course=speaking';
+  if (G.unit) return base + '?unit=' + encodeURIComponent(G.unit.unit_id) + '&course=speaking' + ((G.sp && G.sp.pick != null && (G.unit.scripts || []).length > 1) ? '&n=' + (G.sp.pick + 1) : '');
   return base + (BOOT.unit ? '?unit=' + encodeURIComponent(BOOT.unit) + '&course=' + (BOOT.course || 'speaking') : '');
 }
 function copyText(txt) {
@@ -628,11 +638,15 @@ function panelIntro() {
 }
 
 /* ───────── 코스 1: 듣기 ───────── */
-function panelListening() {
-  const u = G.unit, el = $('#panel');
-  if (!u.audio_url) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 듣기 음원이 아직 등록되지 않았어요.', '듣')}</div>`; return; }
-  el.innerHTML = `<div class="card player fade">
-    <audio id="aud" preload="metadata" src="${esc(u.audio_url)}"></audio>
+function panelListening(idx) {
+  const u = G.unit, el = $('#panel'), auds = u.audios || [];
+  if (!auds.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 듣기 음원이 아직 등록되지 않았어요.', '듣')}</div>`; return; }
+  try { G.au && G.au.el && G.au.el.pause(); } catch (e) {}
+  if (idx == null) idx = initIdx('listening', auds.length) || 0;
+  const au = auds[idx] || auds[0]; G.lsn = idx;
+  const chips = auds.length > 1 ? `<div class="chiprow" role="tablist" aria-label="듣기 음원 선택">${auds.map((a, i) => `<button class="pill ${i === idx ? 'on' : ''}" data-act="pickAudio" data-i="${i}">🎧 ${esc(a.title || '음원 ' + (i + 1))}</button>`).join('')}</div>` : '';
+  el.innerHTML = `${chips}<div class="card player fade">
+    <audio id="aud" preload="metadata" src="${esc(au.audio_url)}"></audio>
     <div class="pl-main">
       <button class="playbtn" id="playBtn" data-act="play" aria-label="재생">▶</button>
       <div class="seekbox">
@@ -649,7 +663,7 @@ function panelListening() {
     <div class="ctrl" style="justify-content:space-between">
       <button class="btn btn-ghost btn-sm" data-act="toggleTr" id="trBtn">📄 대본 보기</button>
       <button class="btn btn-jade btn-sm" data-act="markListen">✓ 듣기 완료</button></div>
-    <div id="trBox" hidden class="tr">${transcriptHtml(u.transcript)}</div>
+    <div id="trBox" hidden class="tr">${transcriptHtml(au.transcript)}</div>
   </div>`;
   const a = $('#aud'), seek = $('#seek');
   G.au = { el: a, A: null, B: null, loop: false, seeking: false, fallback: false };
@@ -668,9 +682,9 @@ function panelListening() {
   a.addEventListener('pause', () => $('#playBtn') && ($('#playBtn').textContent = '▶'));
   a.addEventListener('ended', () => { $('#playBtn').textContent = '▶'; markListening(true); });
   a.addEventListener('error', async () => {
-    const s = G.au; if (!s || s.fallback || !u.audio_is_drive) { toast('음원을 재생할 수 없어요. 파일 공유 설정을 확인해 주세요.'); return; }
+    const s = G.au; if (!s || s.fallback || !au.audio_is_drive) { toast('음원을 재생할 수 없어요. 파일 공유 설정을 확인해 주세요.'); return; }
     s.fallback = true; toast('음원을 다른 방법으로 불러오는 중…', 4000);
-    try { const r = await api('api_getAudioData', u.unit_id); a.src = 'data:' + r.mime + ';base64,' + r.data; a.load(); }
+    try { const r = await api('api_getAudioData', u.unit_id, au.audio_no); a.src = 'data:' + r.mime + ';base64,' + r.data; a.load(); }
     catch (e) { toast(e.message); }
   });
   seek.addEventListener('input', () => { G.au.seeking = true; seek.style.setProperty('--p', seek.value / 10 + '%'); $('#tNow').textContent = fmt((a.duration || 0) * seek.value / 1000); });
@@ -706,7 +720,7 @@ function stageHtml() {
     <div class="st-right"><div id="stAv" style="width:100%"></div><div class="st-plate"><div class="st-name" id="stName"></div><div class="st-title" id="stTitle"></div></div></div></div>`;
 }
 function paintStage() {
-  const sp = G.sp, sc = G.unit.script, n = sc.length, el = $('#stage'); if (!sp || !el) return;
+  const sp = G.sp, sc = sp.sc, n = sc.length, el = $('#stage'); if (!sp || !el) return;
   const bg = G.unit.bg_url; el.style.backgroundImage = bg ? `url("${bg.replace(/"/g, '%22')}"), linear-gradient(160deg,var(--indigo2),var(--indigo))` : '';
   const t = sc[Math.min(sp.idx, n - 1)];
   const av = $('#stAv'), fig = imgUrl(t.character_img_url);
@@ -721,12 +735,20 @@ function paintStage() {
   $('#myText').textContent = t.my_line; $('#myText').hidden = !sp.showMy;
   $('#myTog').textContent = sp.showMy ? '숨기기' : '보기';
 }
-function panelSpeaking() {
-  const u = G.unit, el = $('#panel'), sc = u.script || [];
-  if (!sc.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 말하기 대본이 아직 없어요.', '말')}</div>`; return; }
-  G.sp = { phase: 'intro', idx: 0, segs: [], done: false, busy: false, blob: null, showMy: false };
+function panelSpeaking(idx) {
+  const u = G.unit, el = $('#panel'), scripts = u.scripts || [];
+  if (!scripts.length) { el.innerHTML = `<div class="card">${emptyBox('이 단원의 말하기 대본이 아직 없어요.', '말')}</div>`; return; }
+  if (idx === 'list') idx = null; else if (idx == null) idx = initIdx('speaking', scripts.length);
+  if (idx == null) {   // 말하기가 여러 개면 먼저 고르기
+    G.sp = null;
+    el.innerHTML = `<div class="fade"><p class="muted" style="margin:0 2px 12px">연습할 말하기를 골라 주세요.</p>${scripts.map((s, i) => `<button class="card setcard" data-act="pickSet" data-i="${i}"><span class="serif" style="font-size:18px;font-weight:900">🗣️ ${esc(s.title || '말하기 ' + (i + 1))}</span><span class="small muted">대화 ${s.turns.length}개 · 처음 상대: ${esc((s.turns[0] || {}).character_name || '')}</span></button>`).join('')}</div>`;
+    return;
+  }
+  const sc = (scripts[idx] || scripts[0]).turns;
+  G.sp = { phase: 'intro', idx: 0, segs: [], done: false, busy: false, blob: null, showMy: false, sc, pick: idx, setNo: (scripts[idx] || scripts[0]).set_no };
   el.innerHTML = `<div class="fade">
     ${G.user ? '' : '<p class="chip" style="margin:0 2px 10px">게스트 모드 · 결과는 저장되지 않아요</p>'}
+    ${scripts.length > 1 ? `<div style="display:flex;align-items:center;gap:8px;margin:0 2px 10px"><b class="serif">🗣️ ${esc((scripts[idx] || scripts[0]).title || '말하기 ' + ((idx || 0) + 1))}</b><button class="btn btn-ghost btn-sm" data-act="spList" style="margin-left:auto">다른 말하기 고르기</button></div>` : ''}
     ${stageHtml()}
     <div class="card myline" id="myBox" hidden><div class="ml-head"><b>🗨️ 내가 말할 대사</b><button class="btn btn-ghost btn-sm" id="myTog" data-act="toggleMy">보기</button></div><div class="ml-text" id="myText"></div></div>
     ${micNotice()}
@@ -749,7 +771,7 @@ function panelSpeaking() {
 }
 function playNpc() {
   const sp = G.sp; if (!sp || sp.done) return;
-  const t = G.unit.script[sp.idx];
+  const t = sp.sc[sp.idx];
   try { sp.npc && sp.npc.pause(); speechSynthesis.cancel(); } catch (e) {}
   if (t.npc_audio_url) {
     const a = new Audio(t.npc_audio_url); sp.npc = a;
@@ -775,7 +797,7 @@ async function saveSeg() {
     if (pcm.length < 16000 * 0.4) { toast('녹음이 너무 짧아요. 다시 녹음해 주세요.'); sp.busy = false; return setDock('ready'); }
     sp.segs[sp.idx] = pcm; sp.segs.length = sp.idx + 1; sp.busy = false;
     if (sp.url) { URL.revokeObjectURL(sp.url); sp.url = null; }
-    if (sp.idx + 1 < G.unit.script.length) showTurn(sp.idx + 1);
+    if (sp.idx + 1 < sp.sc.length) showTurn(sp.idx + 1);
     else { sp.blob = null; sp.done = true; const p = $('#prev'); if (p) { p.pause(); p.removeAttribute('src'); } paintStage(); setDock('done'); }
   } catch (e) { sp.busy = false; toast('이 녹음 형식을 처리하지 못했어요. 다시 녹음하거나 mp3·m4a·wav 파일을 써 주세요.', 5000); setDock('ready'); }
 }
@@ -876,7 +898,7 @@ function readBuf(blob) {
 
 async function submitSpeaking() {
   const sp = G.sp; if (!sp || sp.busy || !sp.done) return;
-  const n = G.unit.script.length, gap = GAP_SEC * 16000;
+  const n = sp.sc.length, gap = GAP_SEC * 16000;
   const total = sp.segs.reduce((a, s) => a + s.length, 0) + gap * (n - 1);
   if (total / 16000 > MAX_REC) return toast(`전체 녹음이 너무 길어요. ${fmt(MAX_REC)} 이내로 줄여 주세요. (지금 ${fmt(total / 16000)})`, 5000);
   sp.busy = true; setDock('busy');
@@ -889,7 +911,7 @@ async function submitSpeaking() {
     sp.segs.forEach((s, i) => { all.set(s, o); o += s.length + (i < n - 1 ? gap : 0); });
     const b64 = await blobToB64(encodeWav(all, 16000));
     $('#loadTxt').textContent = steps[1];
-    const r = await api('api_speakingSubmit', G.token, G.unit.unit_id, G.cs, b64, 'audio/wav', n);
+    const r = await api('api_speakingSubmit', G.token, G.unit.unit_id, G.cs, b64, 'audio/wav', n, sp.setNo);
     clearInterval(tm); setLoading(false);
     if (!r.ok) { toast(r.error, 4500); sp.busy = false; return setDock('done'); }
     sp.phase = 'result'; sp.busy = false; viewSpResult(r);
@@ -906,15 +928,16 @@ function viewSpResult(sum) {
       ${sum.strengths && sum.strengths.length ? `<b>👍 잘한 점</b><ul class="bul">${sum.strengths.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
       ${sum.weak_points && sum.weak_points.length ? `<b style="display:block;margin-top:12px">🎯 이렇게 보완해 보세요</b><ul class="bul">${sum.weak_points.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}</div>` : ''}
     <h3 class="serif" style="margin:22px 2px 0;font-size:19px">대화별 결과</h3>
+    <p class="small muted" style="margin:4px 2px 0">모범답안과 달라도 상황에 맞는 자연스러운 대답이면 AI가 점수를 인정해요.</p>
     ${results.map(r => `<div class="card tcard">
       <div class="q"><span class="scorepill" style="background:${scol(r.final_score)}">${r.final_score}점</span>${r.turn_no}번째 · ${esc(r.npc_line)}</div>
       <div class="row">
         <div class="tbox"><small>내가 말한 문장</small>${r.heard ? esc(r.heard) : '<span class="muted">인식된 말이 없어요</span>'}</div>
-        <div class="tbox model"><small>모범답안</small>${esc(r.model_answer)}${r.ref_answer && r.ref_answer !== r.model_answer ? `<div class="small muted" style="margin-top:4px">교재 대본: ${esc(r.ref_answer)}</div>` : ''}</div>
+        <div class="tbox model"><small>모범답안 (참고)</small>${esc(r.model_answer)}${r.ref_answer && r.ref_answer !== r.model_answer ? `<div class="small muted" style="margin-top:4px">교재 대본: ${esc(r.ref_answer)}</div>` : ''}</div>
         ${r.keywords && r.keywords.length ? `<div class="kws">${r.keywords.map(k => `<span class="kw ${k.hit ? 'y' : 'n'}">${esc(k.k)}</span>`).join('')}</div>` : ''}
         ${r.feedback ? `<div class="tbox fb"><small>교정 코멘트</small>${esc(r.feedback)}</div>` : ''}
       </div>
-      <div class="subs"><span>문자 유사도 ${r.similarity}%</span></div></div>`).join('')}
+      <div class="subs"><span>문자 유사도 ${r.similarity}%</span>${r.ai_score != null ? `<span>AI 평가 ${r.ai_score}점</span>` : ''}</div></div>`).join('')}
     ${G.user ? '' : `<div class="card" style="margin-top:14px;background:var(--gold-soft)"><b>게스트 모드예요</b><p class="small muted" style="margin:4px 0 10px">이 결과는 저장되지 않아요. 로그인하면 점수와 취약 단원이 계정에 쌓여요.</p><button class="btn btn-primary btn-sm" data-act="login">로그인하고 기록하기</button></div>`}
     <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
       <button class="btn btn-ghost" data-act="retrySp">🔁 다시 연습</button>
@@ -1117,7 +1140,10 @@ const ACT = {
   toggleMy: () => { const sp = G.sp; if (!sp) return; sp.showMy = !sp.showMy; paintStage(); },
   rec: () => startRec(), stop: () => stopRec(), rerec: () => reRec(), submit: () => submitSpeaking(),
   tts: t => speak(t.dataset.text),
-  retrySp: () => viewUnit('speaking'),
+  retrySp: () => { const k = G.sp && G.sp.pick; viewUnit('speaking'); if (k != null && (G.unit.scripts || []).length > 1) panelSpeaking(k); },
+  pickAudio: t => panelListening(+t.dataset.i),
+  pickSet: t => panelSpeaking(+t.dataset.i),
+  spList: async () => { if (spBusy() && !(await askConfirm('녹음한 내용이 사라져요. 목록으로 돌아갈까요?', '이동'))) return; cleanup(); panelSpeaking('list'); },
   /* 자기평가 */
   submitAs: () => submitAssessment(),
   retryAs: () => viewUnit('assessment'),
@@ -1302,11 +1328,12 @@ async function adOpenUnit(id) {
 }
 function adNewUnit() {
   const max = (A.units || []).reduce((m, u) => Math.max(m, u.unit_order || 0), 0);
-  adLoadEditor({ unit: { unit_id: '', unit_order: max + 1, unit_title: '', audio_url: '', transcript: '', is_active: true, bg_url: '', intro_url: '', intro_text: '' }, dialogues: [], questions: [] }, true);
+  adLoadEditor({ unit: { unit_id: '', unit_order: max + 1, unit_title: '', audio_url: '', transcript: '', is_active: true, bg_url: '', intro_url: '', intro_text: '' }, audios: [], dialogues: [], questions: [] }, true);
 }
 function adLoadEditor(d, isNew) {
   A.unit = d.unit; A.isNew = isNew; A.dirty = {}; A.sub = 'basic';
-  A.dlg = d.dialogues.map(x => Object.assign({}, x));
+  A.dlg = d.dialogues.map(x => Object.assign({}, x, { set_no: x.set_no || 1 })); A.set = (A.dlg[0] && A.dlg[0].set_no) || 1;
+  A.audios = (d.audios || []).map(x => Object.assign({}, x));
   A.qs = d.questions.map(x => Object.assign({}, x));
   viewAdmin('units');
 }
@@ -1320,26 +1347,49 @@ function adEditor() {
 const adNeedSave = () => { $('#adSub').innerHTML = '<div class="card"><p class="muted">먼저 <b>듣기·기본</b> 탭에서 단원 정보를 저장해 주세요.</p></div>'; };
 
 /* 2-1) 듣기 · 기본 */
+const adSets = () => { const s = [...new Set(A.dlg.map(d => d.set_no || 1))].sort((a, b) => a - b); return s.length ? s : [1]; };
+function adQrHtml() {
+  const u = A.unit, base = BOOT.appUrl || ''; if (A.isNew || !base) return '';
+  const nA = A.audios.length, nS = adSets().length, enc = encodeURIComponent(u.unit_id);
+  const rows = [['🎬 도입', 'intro']];
+  if (nA > 1) A.audios.forEach((a, i) => rows.push([`🎧 듣기 ${i + 1}${a.title ? ' · ' + a.title : ''}`, 'listening', i + 1])); else rows.push(['🎧 듣기', 'listening']);
+  if (nS > 1) adSets().forEach((s, i) => { const t = (A.dlg.find(d => d.set_no === s) || {}).set_title; rows.push([`🗣️ 말하기 ${i + 1}${t ? ' · ' + t : ''}`, 'speaking', i + 1]); }); else rows.push(['🗣️ 말하기', 'speaking']);
+  rows.push(['📝 자기평가', 'assessment']);
+  return `<div class="card" style="margin-top:14px"><b>🔗 QR 코드용 주소</b><p class="small muted" style="margin:4px 0 4px">이 주소로 QR 코드를 만들어 교재에 인쇄하세요. 듣기·말하기가 여러 개면 각각 따로 있어요. (음원·말하기를 추가·저장한 뒤 갱신돼요)</p>
+    ${rows.map(r => { const url = `${base}?unit=${enc}&course=${r[1]}${r[2] ? '&n=' + r[2] : ''}`; return `<div class="qrrow"><b>${esc(r[0])}</b><input class="txt" readonly value="${esc(url)}" onfocus="this.select()" aria-label="${esc(r[0])} 주소"><button class="btn btn-ghost btn-sm" data-act="copyText" data-text="${esc(url)}">복사</button></div>`; }).join('')}</div>`;
+}
+function adAudioCard(a, i) {
+  const pv = adAudioUrl(a.audio_url), at = f => `data-ad="aud" data-i="${i}" data-f="${f}"`;
+  return `<div class="card adcard" style="margin-top:10px"><div class="adhead"><b class="serif">음원 ${i + 1}</b><span class="adbtns"><button class="iconbtn danger" data-act="adAudDel" data-i="${i}" aria-label="삭제">✕</button></span></div>
+    <div class="fld"><label>이름 (선택 · 예: 대화 A)</label><input class="txt" ${at('title')} value="${esc(a.title)}" maxlength="60"></div>
+    ${pv ? `<audio controls preload="none" src="${esc(pv)}" style="width:100%;margin-bottom:10px"></audio>` : '<p class="muted small" style="margin-bottom:10px">등록된 음원이 없어요.</p>'}
+    <div class="adrow"><label class="btn btn-ghost btn-sm">📁 음원 파일 올리기<input type="file" hidden accept="audio/*,.mp3,.m4a,.wav" data-ad="file" data-kind="audio" data-i="${i}"></label></div>
+    <div class="fld" style="margin-top:10px"><label>또는 음원 주소 (Drive 공유 링크 / https 주소)</label><input class="txt" ${at('audio_url')} value="${esc(a.audio_url)}" placeholder="https://drive.google.com/file/d/…/view"></div>
+    <div class="fld"><label>음성 대본 (한 줄에 한 문장, "화자: 대사" 형식)</label><textarea class="txt" rows="6" ${at('transcript')}>${esc(a.transcript)}</textarea></div></div>`;
+}
 function adSubBasic() {
-  const u = A.unit, pv = adAudioUrl(u.audio_url);
-  const base = BOOT.appUrl || '';
-  const qr = (!A.isNew && base) ? `<div class="card" style="margin-top:14px"><b>🔗 QR 코드용 주소</b><p class="small muted" style="margin:4px 0 4px">이 주소로 QR 코드를 만들어 교재에 인쇄하세요.</p>
-    ${[['intro', '🎬 도입'], ['listening', '🎧 듣기'], ['speaking', '🗣️ 말하기'], ['assessment', '📝 자기평가']].map(c => { const url = `${base}?unit=${encodeURIComponent(u.unit_id)}&course=${c[0]}`; return `<div class="qrrow"><b>${c[1]}</b><input class="txt" readonly value="${esc(url)}" onfocus="this.select()" aria-label="${c[1]} 주소"><button class="btn btn-ghost btn-sm" data-act="copyText" data-text="${esc(url)}">복사</button></div>`; }).join('')}</div>` : '';
+  const u = A.unit;
   $('#adSub').innerHTML = `<div class="card">
     <div class="g2"><div class="fld"><label>단원 코드 (QR 파라미터)</label><input class="txt" data-ad="unit" data-f="unit_id" value="${esc(u.unit_id)}" ${A.isNew ? '' : 'readonly'} placeholder="예: U03" maxlength="30" autocomplete="off"></div>
     <div class="fld"><label>정렬 순서</label><input class="txt" type="number" data-ad="unit" data-f="unit_order" value="${esc(u.unit_order)}"></div></div>
     <div class="fld"><label>단원명</label><input class="txt" data-ad="unit" data-f="unit_title" value="${esc(u.unit_title)}" maxlength="100" placeholder="예: 처음 만났어요 (자기소개)"></div>
     <label class="sw"><input type="checkbox" data-ad="unit" data-f="is_active" ${u.is_active ? 'checked' : ''}> 학습자에게 공개</label>
-    <h4 class="serif adh">🎧 듣기 음원</h4>
-    ${pv ? `<audio controls preload="none" src="${esc(pv)}" style="width:100%;margin-bottom:10px"></audio>` : '<p class="muted small" style="margin-bottom:10px">등록된 음원이 없어요.</p>'}
-    <div class="adrow"><label class="btn btn-ghost btn-sm">📁 음원 파일 올리기<input type="file" hidden accept="audio/*,.mp3,.m4a,.wav" data-ad="file" data-kind="audio"></label>
-    ${u.audio_url ? '<button class="btn btn-ghost btn-sm" data-act="adClearAudio">음원 제거</button>' : ''}</div>
-    <div class="fld" style="margin-top:10px"><label>또는 음원 주소 (Drive 공유 링크 / https 주소)</label><input class="txt" data-ad="unit" data-f="audio_url" value="${esc(u.audio_url)}" placeholder="https://drive.google.com/file/d/…"></div>
-    <p class="small muted">mp3·m4a·wav, 11MB 이하. 더 큰 파일은 Drive에 올리고 공유 링크를 붙여 넣으세요. 변경 후 <b>저장</b>을 눌러야 반영돼요.</p>
-    <div class="fld" style="margin-top:12px"><label>음성 대본 (한 줄에 한 문장, "화자: 대사" 형식)</label><textarea class="txt" rows="7" data-ad="unit" data-f="transcript">${esc(u.transcript)}</textarea></div>
-    <button class="btn btn-primary btn-block" data-act="adSaveUnit">저장</button></div>
-    ${qr}
+    <button class="btn btn-primary btn-block" style="margin-top:12px" data-act="adSaveUnit">저장</button></div>
+    ${A.isNew ? '' : `<div class="card" style="margin-top:14px"><b>🎧 듣기 음원</b>
+      <p class="small muted" style="margin-top:2px">한 단원에 음원을 여러 개 등록할 수 있어요. 학습자는 음원을 골라 들어요. mp3·m4a·wav, 11MB 이하(더 큰 파일은 Drive 링크).</p>
+      <div id="adAuds">${A.audios.map(adAudioCard).join('') || '<p class="muted small" style="margin-top:8px">등록된 음원이 없어요.</p>'}</div>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px" data-act="adAudAdd">＋ 음원 추가</button>
+      <button class="btn btn-primary btn-block" style="margin-top:10px" data-act="adSaveAudios">듣기 음원 저장</button></div>`}
+    ${adQrHtml()}
     ${A.isNew ? '' : '<div class="card" style="margin-top:14px"><b>단원 삭제</b><p class="small muted" style="margin:4px 0 10px">단원과 말하기 시나리오·자기평가 문항이 삭제돼요. 학습자 기록은 남아요. 잠시 숨기려면 위의 "학습자에게 공개"를 끄세요.</p><button class="btn btn-ghost btn-sm danger" data-act="adDelUnit">🗑 이 단원 삭제</button></div>'}`;
+}
+async function adSaveAudios() {
+  setLoading(true, '저장하는 중…');
+  try {
+    const list = A.audios.filter(a => String(a.audio_url || '').trim());
+    const r = await api('api_admin_saveAudios', G.token, A.unit.unit_id, list);
+    A.audios = list; A.dirty.aud = 0; setLoading(false); toast(`음원 ${r.saved}개를 저장했어요.`); adSubBasic();
+  } catch (e) { setLoading(false); toast(e.message, 5000); }
 }
 async function adSaveUnit() {
   const u = A.unit;
@@ -1347,7 +1397,7 @@ async function adSaveUnit() {
   if (!String(u.unit_title).trim()) return toast('단원명을 입력해 주세요.');
   setLoading(true, '저장하는 중…');
   try {
-    await api('api_admin_saveUnit', G.token, { unit_id: u.unit_id, unit_order: u.unit_order, unit_title: u.unit_title, audio_url: u.audio_url, transcript: u.transcript, is_active: !!u.is_active, bg_url: u.bg_url, intro_url: u.intro_url, intro_text: u.intro_text, isNew: A.isNew });
+    await api('api_admin_saveUnit', G.token, { unit_id: u.unit_id, unit_order: u.unit_order, unit_title: u.unit_title, is_active: !!u.is_active, bg_url: u.bg_url, intro_url: u.intro_url, intro_text: u.intro_text, isNew: A.isNew });
     const was = A.isNew; A.isNew = false; A.dirty.unit = 0; setLoading(false);
     toast(was ? '단원을 만들었어요. 이제 말하기와 자기평가를 채워 보세요.' : '저장했어요.'); adEditor();
   } catch (e) { setLoading(false); toast(e.message, 5000); }
@@ -1377,11 +1427,12 @@ function adSubIntro() {
 /* 2-2) 말하기: 등장인물(사전 설정)을 골라 대본 구성 */
 const adChOpt = (sel) => '<option value="">— 등장인물 선택 —</option>' + (A.chars || []).map(x => `<option value="${esc(x.character_id)}" ${x.character_id === sel ? 'selected' : ''}>${esc(x.name)}${x.title ? ' · ' + esc(x.title) : ''}</option>`).join('');
 const adChById = id => (A.chars || []).find(x => x.character_id === id);
+const adSetIdx = () => A.dlg.map((d, i) => (d.set_no || 1) === A.set ? i : -1).filter(i => i >= 0);
 function adTurnHtml(d, i) {
-  const n = A.dlg.length, at = f => `data-ad="dlg" data-i="${i}" data-f="${f}"`, ch = adChById(d.character_id);
-  return `<div class="card adcard"><div class="adhead"><b class="serif">대화 ${i + 1}</b><span class="adbtns">
-      <button class="iconbtn" data-act="adTurnUp" data-i="${i}" aria-label="위로" ${i === 0 ? 'disabled' : ''}>↑</button>
-      <button class="iconbtn" data-act="adTurnDown" data-i="${i}" aria-label="아래로" ${i === n - 1 ? 'disabled' : ''}>↓</button>
+  const idxs = adSetIdx(), pos = idxs.indexOf(i), n = idxs.length, at = f => `data-ad="dlg" data-i="${i}" data-f="${f}"`, ch = adChById(d.character_id);
+  return `<div class="card adcard"><div class="adhead"><b class="serif">대화 ${pos + 1}</b><span class="adbtns">
+      <button class="iconbtn" data-act="adTurnUp" data-i="${i}" aria-label="위로" ${pos === 0 ? 'disabled' : ''}>↑</button>
+      <button class="iconbtn" data-act="adTurnDown" data-i="${i}" aria-label="아래로" ${pos === n - 1 ? 'disabled' : ''}>↓</button>
       <button class="iconbtn danger" data-act="adTurnDel" data-i="${i}" aria-label="삭제">✕</button></span></div>
     <div class="fld"><label>상대 등장인물</label><div class="chpick"><span data-av="${i}" style="flex:none">${avatarHtml(ch ? { character_name: ch.name, character_img_url: adImg(ch.img_url) } : { character_name: d.character_name, character_img_url: adImg(d.character_img_url) })}</span>
       <select class="txt" ${at('character_id')}>${adChOpt(d.character_id)}</select></div>
@@ -1390,7 +1441,7 @@ function adTurnHtml(d, i) {
     <div class="fld"><label>상대 음성 <span class="small muted">(선택 · 없으면 TTS 음성으로 읽어 줘요)</span></label>
       ${d.npc_audio_url ? `<audio controls preload="none" src="${esc(adAudioUrl(d.npc_audio_url))}" style="width:100%;margin-bottom:6px"></audio>` : ''}
       <div class="adrow"><label class="btn btn-ghost btn-sm">🎙️ 음성 파일 올리기<input type="file" hidden accept="audio/*,.mp3,.m4a,.wav" data-ad="file" data-kind="npcaudio" data-i="${i}"></label>${d.npc_audio_url ? `<button class="btn btn-ghost btn-sm" data-act="adClearNpc" data-i="${i}">음성 제거</button>` : ''}</div></div>
-    <div class="fld"><label>학습자가 말할 대본 (기준 정답)</label><textarea class="txt" rows="2" ${at('ref_answer')}>${esc(d.ref_answer)}</textarea></div>
+    <div class="fld"><label>학습자가 말할 대본 (모범 답안)</label><textarea class="txt" rows="2" ${at('ref_answer')}>${esc(d.ref_answer)}</textarea></div>
     <div class="fld"><label>핵심 키워드 (쉼표로 구분, 선택)</label><input class="txt" ${at('keywords')} value="${esc(d.keywords)}" placeholder="예: 미국,왔어요"></div></div>`;
 }
 async function adSubSpeaking() {
@@ -1399,17 +1450,22 @@ async function adSubSpeaking() {
     $('#adSub').innerHTML = emptyBox('등장인물을 불러오는 중…', '…');
     try { A.chars = await api('api_admin_listCharacters', G.token); } catch (e) { $('#adSub').innerHTML = emptyBox(e.message, '!'); return; }
   }
-  const bgp = imgUrl(A.unit.bg_url);
+  const bgp = imgUrl(A.unit.bg_url), sets = adSets(); if (sets.indexOf(A.set) < 0) A.set = sets[0];
+  const idxs = adSetIdx(), cur = A.dlg[idxs[0]] || {};
   $('#adSub').innerHTML = `<div class="card"><b>🖼️ 말하기 배경 이미지</b>
-    <p class="small muted" style="margin-top:2px">대화 장면의 배경이에요(예: 카페, 교실, 면접장). 가운데에 상대 등장인물이 나타나요. 가로로 긴 사진을 권장해요(1280px 이내로 자동 조정).</p>
+    <p class="small muted" style="margin-top:2px">대화 장면의 배경이에요(예: 카페, 교실, 면접장). 인물이 배경 앞에 서 있는 모습으로 나와요. 가로로 긴 사진을 권장해요(1280px 이내로 자동 조정). 단원의 모든 말하기에 같이 쓰여요.</p>
     <div class="stage" style="min-height:150px;padding:16px;margin:10px 0;${bgp ? `background-image:url('${esc(bgp)}')` : ''}"><span class="st-title">${bgp ? '미리보기' : '배경 없음 (기본 색 배경)'}</span></div>
     <div class="adrow"><label class="btn btn-ghost btn-sm">🖼️ 배경 이미지 올리기<input type="file" hidden accept="image/*" data-ad="file" data-kind="bg"></label>${A.unit.bg_url ? '<button class="btn btn-ghost btn-sm" data-act="adClearBg">배경 제거</button>' : ''}<button class="btn btn-primary btn-sm" data-act="adSaveUnit">배경 저장</button></div></div>
     <div class="card" style="margin-top:14px"><b>🗣️ 말하기 대본</b>
-    <p class="small muted" style="margin-top:2px">대화는 한 줄씩 나타나고, 학습자는 대사마다 녹음·저장한 뒤 마지막에 한 번에 제출해요(대사 사이 2초 무음을 넣어 하나의 파일로 합쳐요). 대화마다 미리 등록한 등장인물을 고르세요. 등장인물은 <b>등장인물</b> 탭에서 추가·수정해요.</p>
-    ${A.chars.length ? `<div class="fld" style="margin-top:10px"><label>모든 대화에 같은 인물 적용</label><select class="txt" data-ad="allchar">${adChOpt('')}</select></div>` : `<p class="small" style="margin-top:8px;color:var(--dan)">등록된 등장인물이 없어요. 먼저 <b>등장인물</b> 탭에서 추가해 주세요.</p>`}</div>
-    <div id="adTurns">${A.dlg.map(adTurnHtml).join('')}</div>
+    <p class="small muted" style="margin-top:2px">한 단원에 말하기를 여러 개 만들 수 있어요. 학습자는 대사마다 녹음·저장한 뒤 마지막에 한 번에 제출해요. 아래에서 말하기를 고르거나 추가하세요.</p>
+    <div class="chiprow" style="margin-top:10px">${sets.map((s, k) => `<button class="pill ${s === A.set ? 'on' : ''}" data-act="adSetPick" data-s="${s}">말하기 ${k + 1}</button>`).join('')}<button class="pill" data-act="adSetAdd">＋ 말하기 추가</button></div>
+    <div class="fld" style="margin-top:6px"><label>이 말하기의 이름 (선택 · 예: 자기소개하기)</label><input class="txt" data-ad="settitle" value="${esc(cur.set_title || '')}" maxlength="40"></div>
+    ${A.chars.length ? `<div class="fld" style="margin-top:10px"><label>이 말하기의 모든 대화에 같은 인물 적용</label><select class="txt" data-ad="allchar">${adChOpt('')}</select></div>` : `<p class="small" style="margin-top:8px;color:var(--dan)">등록된 등장인물이 없어요. 먼저 <b>등장인물</b> 탭에서 추가해 주세요.</p>`}
+    ${sets.length > 1 ? '<div style="margin-top:6px"><button class="btn btn-ghost btn-sm danger" data-act="adSetDel">🗑 이 말하기 삭제</button></div>' : ''}</div>
+    <div id="adTurns">${idxs.map(i => adTurnHtml(A.dlg[i], i)).join('')}</div>
     <button class="btn btn-ghost btn-block" style="margin-top:12px" data-act="adAddTurn">＋ 대화 추가</button>
-    <button class="btn btn-primary btn-block" style="margin-top:14px" data-act="adSaveDlg">말하기 내용 저장</button>`;
+    <button class="btn btn-primary btn-block" style="margin-top:14px" data-act="adSaveDlg">말하기 내용 저장 (모든 말하기)</button>
+    ${adQrHtml()}`;
 }
 function adPickChar(i, id) {
   const d = A.dlg[i], ch = adChById(id);
@@ -1423,9 +1479,11 @@ async function adSaveDlg() {
   const miss = A.dlg.findIndex(d => !d.character_id); if (miss >= 0) return toast(`${miss + 1}번째 대화의 등장인물을 골라 주세요.`);
   setLoading(true, '저장하는 중…');
   try {
-    const rows = A.dlg.map(d => ({ character_id: d.character_id, npc_line: d.npc_line, ref_answer: d.ref_answer, keywords: d.keywords, npc_audio_url: d.npc_audio_url }));
+    const rows = A.dlg.map(d => ({ set_no: d.set_no || 1, set_title: d.set_title || '', character_id: d.character_id, npc_line: d.npc_line, ref_answer: d.ref_answer, keywords: d.keywords, npc_audio_url: d.npc_audio_url }));
     const r = await api('api_admin_saveDialogues', G.token, A.unit.unit_id, rows);
-    A.dirty.dlg = 0; setLoading(false); toast(`대화 ${r.saved}개를 저장했어요.`);
+    A.dirty.dlg = 0; setLoading(false); toast(`대화 ${r.saved}개를 저장했어요.` + (r.sets > 1 ? ` (말하기 ${r.sets}개)` : ''));
+    // 서버가 번호를 1부터 다시 매기므로 화면도 맞춤
+    { const ord = adSets(); A.dlg.forEach(d => { d.set_no = ord.indexOf(d.set_no || 1) + 1; }); A.set = ord.indexOf(A.set) + 1 || 1; adSubSpeaking(); }
   } catch (e) { setLoading(false); toast(e.message, 5000); }
 }
 
@@ -1561,7 +1619,7 @@ async function adUploadFile(input) {
     const b64 = await blobToB64(blob);
     const r = await api('api_admin_uploadFile', G.token, isAud ? 'audio' : isVid ? 'video' : 'image', (A.unit && A.unit.unit_id) || kind, f.name, mime, b64);
     setLoading(false);
-    if (kind === 'audio') { A.unit.audio_url = r.url; A.dirty.unit = 1; adSubBasic(); }
+    if (kind === 'audio') { A.audios[+input.dataset.i].audio_url = r.url; A.dirty.aud = 1; adSubBasic(); }
     else if (kind === 'npcaudio') { A.dlg[+input.dataset.i].npc_audio_url = r.url; A.dirty.dlg = 1; adSubSpeaking(); }
     else if (kind === 'video') { A.unit.intro_url = r.url; A.dirty.unit = 1; adSubIntro(); }
     else if (kind === 'bg') { A.unit.bg_url = r.url; A.dirty.unit = 1; adSubSpeaking(); }
@@ -1620,6 +1678,8 @@ document.addEventListener('input', e => {
   if (k === 'q') { A.q = v; const tb = $('#lrnBody'); if (tb) tb.innerHTML = adLearnerRows(); }
   else if (k === 'sort') { A.sort = v; const tb = $('#lrnBody'); if (tb) tb.innerHTML = adLearnerRows(); }
   else if (k === 'unit') { A.unit[f] = v; A.dirty.unit = 1; }
+  else if (k === 'aud') { A.audios[i][f] = v; A.dirty.aud = 1; }
+  else if (k === 'settitle') { A.dlg.forEach(d => { if ((d.set_no || 1) === A.set) d.set_title = v; }); A.dirty.dlg = 1; }
   else if (k === 'dlg') { if (f !== 'character_id') { A.dlg[i][f] = v; A.dirty.dlg = 1; } }
   else if (k === 'chr') { A.chars[i][f] = v; }
   else if (k === 'qs') { A.qs[i][f] = v; A.dirty.qs = 1; }
@@ -1632,7 +1692,7 @@ document.addEventListener('change', e => {
   const t = e.target, k = t.dataset && t.dataset.ad; if (!k) return;
   if (k === 'file') adUploadFile(t);
   else if (k === 'dlg' && t.dataset.f === 'character_id') adPickChar(+t.dataset.i, t.value);
-  else if (k === 'allchar') { if (t.value) { A.dlg.forEach((_, i) => adPickChar(i, t.value)); adSubSpeaking(); } }
+  else if (k === 'allchar') { if (t.value) { adSetIdx().forEach(i => adPickChar(i, t.value)); adSubSpeaking(); } }
   else if (k === 'qs' && t.dataset.f === 'type') adSubAssess();
 });
 
@@ -1654,7 +1714,9 @@ Object.assign(ACT, {
   adSub: t => { A.sub = t.dataset.sub; adEditor(); },
   adSaveUnit: () => adSaveUnit(),
   adDelUnit: () => adDelUnit(),
-  adClearAudio: () => { A.unit.audio_url = ''; A.dirty.unit = 1; adSubBasic(); },
+  adAudAdd: () => { A.audios.push({ title: '', audio_url: '', transcript: '' }); A.dirty.aud = 1; adSubBasic(); },
+  adAudDel: async t => { if (!(await askConfirm('이 음원을 삭제할까요? (저장해야 반영돼요)', '삭제'))) return; A.audios.splice(+t.dataset.i, 1); A.dirty.aud = 1; adSubBasic(); },
+  adSaveAudios: () => adSaveAudios(),
   adClearIntro: () => { A.unit.intro_url = ''; A.dirty.unit = 1; adSubIntro(); },
   adClearNpc: t => { A.dlg[+t.dataset.i].npc_audio_url = ''; A.dirty.dlg = 1; adSubSpeaking(); },
   adClearBg: () => { A.unit.bg_url = ''; A.dirty.unit = 1; adSubSpeaking(); },
@@ -1663,13 +1725,17 @@ Object.assign(ACT, {
   adChDel: t => adChDel(+t.dataset.i),
   adClearLogo: () => { G.settings.logo_url = ''; A.setDirty = true; applySettings(); adDrawDesign(); },
   adAddTurn: () => {
-    const pv = A.dlg[A.dlg.length - 1] || {}; A.dlg.push({ character_id: pv.character_id || '', character_name: pv.character_name || '', character_title: pv.character_title || '', character_img_url: pv.character_img_url || '', npc_line: '', ref_answer: '', keywords: '', npc_audio_url: '' }); A.dirty.dlg = 1; adSubSpeaking();
+    const ids = adSetIdx(), pv = A.dlg[ids[ids.length - 1]] || {};
+    A.dlg.push({ set_no: A.set, set_title: pv.set_title || '', character_id: pv.character_id || '', character_name: pv.character_name || '', character_title: pv.character_title || '', character_img_url: pv.character_img_url || '', npc_line: '', ref_answer: '', keywords: '', npc_audio_url: '' }); A.dirty.dlg = 1; adSubSpeaking();
     const l = $('#adTurns').lastElementChild; if (l) l.scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
-  adTurnUp: t => { const i = +t.dataset.i; if (i > 0) { [A.dlg[i - 1], A.dlg[i]] = [A.dlg[i], A.dlg[i - 1]]; A.dirty.dlg = 1; adSubSpeaking(); } },
-  adTurnDown: t => { const i = +t.dataset.i; if (i < A.dlg.length - 1) { [A.dlg[i + 1], A.dlg[i]] = [A.dlg[i], A.dlg[i + 1]]; A.dirty.dlg = 1; adSubSpeaking(); } },
+  adSetPick: t => { A.set = +t.dataset.s; adSubSpeaking(); },
+  adSetAdd: () => { const n = Math.max(0, ...A.dlg.map(d => d.set_no || 1)) + 1; A.dlg.push({ set_no: n, set_title: '', character_id: '', character_name: '', character_title: '', character_img_url: '', npc_line: '', ref_answer: '', keywords: '', npc_audio_url: '' }); A.set = n; A.dirty.dlg = 1; adSubSpeaking(); },
+  adSetDel: async () => { if (!(await askConfirm('이 말하기(대화 전체)를 삭제할까요? 저장해야 반영돼요.', '삭제'))) return; A.dlg = A.dlg.filter(d => (d.set_no || 1) !== A.set); A.dirty.dlg = 1; A.set = adSets()[0]; adSubSpeaking(); },
+  adTurnUp: t => { const i = +t.dataset.i, ids = adSetIdx(), p = ids.indexOf(i); if (p > 0) { const j = ids[p - 1]; [A.dlg[j], A.dlg[i]] = [A.dlg[i], A.dlg[j]]; A.dirty.dlg = 1; adSubSpeaking(); } },
+  adTurnDown: t => { const i = +t.dataset.i, ids = adSetIdx(), p = ids.indexOf(i); if (p < ids.length - 1) { const j = ids[p + 1]; [A.dlg[j], A.dlg[i]] = [A.dlg[i], A.dlg[j]]; A.dirty.dlg = 1; adSubSpeaking(); } },
   adTurnDel: async t => {
-    if (A.dlg.length <= 1) return toast('대화는 최소 1개가 필요해요.');
+    if (adSetIdx().length <= 1) return toast('한 말하기에 대화는 최소 1개가 필요해요. 말하기 전체를 지우려면 "이 말하기 삭제"를 눌러 주세요.', 4500);
     if (!(await askConfirm('이 대화를 삭제할까요?', '삭제'))) return;
     A.dlg.splice(+t.dataset.i, 1); A.dirty.dlg = 1; adSubSpeaking();
   },
